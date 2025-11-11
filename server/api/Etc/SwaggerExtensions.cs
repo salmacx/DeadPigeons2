@@ -4,27 +4,6 @@ using NSwag.Generation;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Contexts;
 
-public static class SwaggerExtensions
-{
-    /// <summary>
-    /// Adds a type to Swagger schemas
-    /// </summary>
-    public static void AddTypeToSwagger<T>(this OpenApiDocumentGeneratorSettings settings)
-    {
-        settings.DocumentProcessors.Add(new TypeMapDocumentProcessor<T>());
-    }
-
-    /// <summary>
-    /// Adds string constants from a static class to OpenAPI schema
-    /// Usage: config.AddStringConstants(typeof(SieveConstants));
-    /// </summary>
-    public static void AddStringConstants(this OpenApiDocumentGeneratorSettings settings, Type type)
-    {
-        var processorType = typeof(StringConstantsDocumentProcessor<>).MakeGenericType(type);
-        var processor = (IDocumentProcessor)Activator.CreateInstance(processorType)!;
-        settings.DocumentProcessors.Add(processor);
-    }
-}
 
 public class TypeMapDocumentProcessor<T> : IDocumentProcessor
 {
