@@ -18,6 +18,7 @@ public class Program
         services.AddControllers().AddJsonOptions(opts =>
         {
             opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+            opts.JsonSerializerOptions.MaxDepth = 128;
         });
         services.AddOpenApiDocument(config => { config.AddStringConstants(typeof(SieveConstants)); });
         services.AddCors();

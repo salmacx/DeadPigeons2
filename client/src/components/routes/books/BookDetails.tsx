@@ -1,21 +1,8 @@
-import {type Author, type Book, type Genre, type UpdateBookRequestDto} from "../generated-client.ts";
-import type {BookProps} from "./Books.tsx";
+import {type Author, type Book, type Genre, type UpdateBookRequestDto} from "@core/generated-client.ts";
+import type {BookProps} from "@components/routes/books/Books.tsx";
 import {useEffect, useState} from "react";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
 
-<
-<
-<
-<
-<
-<
-<
-<
-Updated
-client / src / components / BookDetails.tsx
-=== === ==
->>> >>> >> Stashed
-client / src / components / Book.tsx
 
 export function BookDetails(props: BookProps) {
 

@@ -1,21 +1,8 @@
-import {type CreateGenreDto, type Genre} from "../generated-client.ts";
-import {GenreDetails} from "./GenreDetails.tsx";
-import {useState} from "react";
-import {Genre} from "./Genre.tsx";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
+import {type CreateGenreDto, type Genre} from "@core/generated-client.ts";
+import {GenreDetails} from "@components/routes/genres/GenreDetails.tsx";
+import {useEffect, useState} from "react";
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
 
-<
-<
-<
-<
-<
-<< Updated upstream:client/src/Components/Genres.tsx
-           import {useEffect, useState} from "react";
-======
-=
->>>>>>>
-Stashed
-client / src / components / Genres.tsx
 
 export interface GenreProps {
     setGenre: React.Dispatch<React.SetStateAction<Genre[]>>;

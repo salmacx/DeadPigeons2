@@ -21,6 +21,13 @@
     "composite": true,
     "outDir": "../../dist",
     "rootDir": ".",
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["./src/core/*"],
+      "@utilities/*": ["./src/utilities/*"],
+      "@components/*": ["./src/components/*"]
+    },
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,

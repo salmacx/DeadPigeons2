@@ -1,4 +1,4 @@
-import type {Author} from "../generated-client.ts";
+import type {Author} from "@core/generated-client.ts";
 
 export interface AuthorProps {
     author: Author

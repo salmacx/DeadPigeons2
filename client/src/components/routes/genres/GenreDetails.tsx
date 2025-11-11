@@ -1,21 +1,7 @@
-import {type Book, type UpdateGenreRequestDto} from "../generated-client.ts";
-import type {GenreProps} from "./Genres.tsx";
+import {type Book, type UpdateGenreRequestDto} from "@core/generated-client.ts";
+import type {GenreProps} from "@components/routes/genres/Genres.tsx";
 import {useEffect, useState} from "react";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
-
-<
-<
-<
-<
-<
-<
-<
-<
-Updated
-client / src / components / GenreDetails.tsx
-=== === ==
->>> >>> >> Stashed
-client / src / components / Genre.tsx
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
 
 export function GenreDetails(props: GenreProps) {
     const [books, setBooks] = useState<Book[]>([]);

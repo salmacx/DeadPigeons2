@@ -1,22 +1,8 @@
-import {type Author, type Book, type CreateAuthorRequestDto} from "../generated-client.ts";
-import {AuthorDetails} from "./AuthorDetails.tsx";
-import {useState} from "react";
-import {type CreateAuthorRequestDto} from "../core/generated-client.ts";
-import {Author} from "./Author.tsx";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
+import {type Author, type Book, type CreateAuthorRequestDto} from "@core/generated-client.ts";
+import {AuthorDetails} from "@components/routes/authors/AuthorDetails.tsx";
+import {useEffect, useState} from "react";
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
 
-<
-<
-<
-<
-<
-<< Updated upstream:client/src/Components/Authors.tsx
-           import {useEffect, useState} from "react";
-======
-=
->>>>>>>
-Stashed
-client / src / components / Authors.tsx
 
 export default function Authors() {
 

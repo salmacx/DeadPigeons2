@@ -1,23 +1,10 @@
-<
-<
-<
-<
-<
-<< Updated upstream:client/src/Components/Books.tsx
-           import {useEffect, useState} from "react";
-import {type Book, type CreateBookRequestDto} from "../generated-client.ts";
-import {BookDetails} from "./BookDetails.tsx";
+
+import {BookDetails} from "@components/routes/books/BookDetails.tsx";
 import {useSearchParams} from "react-router";
 import {SieveQueryBuilder} from "ts-sieve-query-builder";
-import {useState} from "react";
-import {Book} from "./Book.tsx";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
-
-======
-=
->>>>>>>
-Stashed
-client / src / components / Books.tsx
+import {useEffect, useState} from "react";
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
+import type {Book, CreateBookRequestDto} from "@core/generated-client.ts";
 
 export interface BookProps {
     book: Book,

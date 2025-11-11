@@ -1,9 +1,11 @@
+using System.Security.Cryptography;
+using System.Text;
 using Bogus;
 using dataccess;
 
 namespace api.Etc;
 
-public class SieveTestSeeder(MyDbContext ctx) : ISeeder
+public class SieveTestSeeder(MyDbContext ctx, TimeProvider timeProvider) : ISeeder
 {
     public async Task Seed()
     {
@@ -12,6 +14,22 @@ public class SieveTestSeeder(MyDbContext ctx) : ISeeder
         ctx.Books.RemoveRange(ctx.Books);
         ctx.Authors.RemoveRange(ctx.Authors);
         ctx.Genres.RemoveRange(ctx.Genres);
+        ctx.Libraryusers.RemoveRange(ctx.Libraryusers);
+        await ctx.SaveChangesAsync();
+        
+        var salt = Guid.NewGuid().ToString();
+        var hash = SHA512.HashData(
+            Encoding.UTF8.GetBytes("test@user.dk" + salt));
+        var user = new Libraryuser
+        {
+            Email = "test@user.dk",
+            Createdat = timeProvider.GetUtcNow().DateTime.ToUniversalTime(),
+            Id = "test@user.dk",
+            Salt = salt,
+            Passwordhash = hash.Aggregate("", (current, b) => current + b.ToString("x2")),
+            Role = "User"
+        };
+        ctx.Libraryusers.Add(user);
         await ctx.SaveChangesAsync();
 
         // Set a deterministic seed for reproducibility

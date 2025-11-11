@@ -1,7 +1,7 @@
-import {type Book, type UpdateAuthorRequestDto} from "../generated-client.ts";
+import {type Book, type UpdateAuthorRequestDto} from "@core/generated-client.ts";
 import {useState} from "react";
-import useLibraryCrud from "../utilities/useLibraryCrud.ts";
-import type {AuthorProps} from "./AuthorProps.tsx";
+import useLibraryCrud from "@utilities/useLibraryCrud.ts";
+import type {AuthorProps} from "@core/props/AuthorProps.tsx";
 
 export function AuthorDetails(props: AuthorProps) {
     const [books, setAllBooks] = useState<Book[]>([]);

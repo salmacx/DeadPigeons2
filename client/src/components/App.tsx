@@ -1,28 +1,14 @@
 import {createBrowserRouter, RouterProvider} from "react-router";
-import Home from "./Components/Home.tsx";
+import Home from "@components/Home.tsx";
 import {DevTools} from "jotai-devtools";
 import 'jotai-devtools/styles.css'
-import Books from "./Components/Books.tsx";
-import Authors from "./Components/Authors.tsx";
-import Genres from "./Components/Genres.tsx";
+import Books from "@components/routes/books/Books.tsx";
+import Authors from "@components/routes/authors/Authors.tsx";
+import Genres from "@components/routes/genres/Genres.tsx";
 import {Toaster} from "react-hot-toast";
-
-<
-<
-<
-<
-<
-<< Updated upstream:client/src/App.tsx
-    =======
-           import useLibraryCrud from "../utilities/useLibraryCrud.ts";
->>>>>>>
-Stashed
-client / src / components / App.tsx
-
+import Auth from "@components/routes/auth/Auth.tsx";
 
 function App() {
-
-
     return (
         <>
             <RouterProvider router={createBrowserRouter([
@@ -41,7 +27,12 @@ function App() {
                         {
                             path: 'genres',
                             element: <Genres/>
+                        },
+                        {
+                            path: 'auth',
+                            element: <Auth />
                         }
+                        
                     ]
                 }
             ])}/>
