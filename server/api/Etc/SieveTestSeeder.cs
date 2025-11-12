@@ -16,7 +16,7 @@ public class SieveTestSeeder(MyDbContext ctx, TimeProvider timeProvider) : ISeed
         ctx.Genres.RemoveRange(ctx.Genres);
         ctx.Libraryusers.RemoveRange(ctx.Libraryusers);
         await ctx.SaveChangesAsync();
-        
+
         var salt = Guid.NewGuid().ToString();
         var hash = SHA512.HashData(
             Encoding.UTF8.GetBytes("test@user.dk" + salt));

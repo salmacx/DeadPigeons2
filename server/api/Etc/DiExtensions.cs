@@ -1,3 +1,4 @@
+using api.Models;
 using dataccess;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.CodeGeneration.TypeScript;
@@ -40,7 +41,7 @@ public static class DiExtensions
         var openApiJson = document.ToJson();
 
         // Optional: Save the OpenAPI JSON to verify it has documentation
-        var openApiPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "openapi-with-docs.json");
+        var openApiPath = Path.Combine(Directory.GetCurrentDirectory(), "openapi-with-docs.json");
         await File.WriteAllTextAsync(openApiPath, openApiJson);
 
         // Step 3: Parse the document back from JSON to ensure we're only using what's in the OpenAPI spec
@@ -72,8 +73,8 @@ public static class DiExtensions
         // Step 6: Post-process to add const objects for constant schemas
         code = AddConstantObjects(code, documentFromJson);
 
-        var outputPath = System.IO.Path.Combine(Directory.GetCurrentDirectory() + path);
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(outputPath)!);
+        var outputPath = Path.Combine(Directory.GetCurrentDirectory() + path);
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
         await File.WriteAllTextAsync(outputPath, code);
 

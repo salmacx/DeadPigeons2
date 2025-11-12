@@ -1,5 +1,13 @@
-import {LibraryClient} from "@core/generated-client.ts";
-import {finalUrl} from "@utilities/finalUrl.ts";
+import {LibraryClient, type Book} from "@core/generated-client.ts";
+import {baseUrl} from "@core/baseUrl.ts";
 import {customFetch} from "@utilities/customFetch.ts";
+import {resolveRefs} from "dotnet-json-refs";
 
-export const libraryApi = new LibraryClient(finalUrl, customFetch);
+class LibraryClientWithResolvedRefs extends LibraryClient {
+    override async getBooks(requestDto: any): Promise<Book[]> {
+        const result = await super.getBooks(requestDto);
+        return resolveRefs(result);
+    }
+}
+
+export const libraryApi = new LibraryClientWithResolvedRefs(baseUrl, customFetch);

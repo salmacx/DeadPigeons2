@@ -29,6 +29,7 @@
       "@components/*": ["./src/components/*"]
     },
     /* Linting */
+    "noImplicitAny": false,
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,

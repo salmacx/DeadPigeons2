@@ -1,4 +1,4 @@
-namespace api;
+namespace api.Models;
 
 public record JwtClaims(string Id)
 {

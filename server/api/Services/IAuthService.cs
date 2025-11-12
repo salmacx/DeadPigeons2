@@ -1,4 +1,5 @@
-using api.DTOs.Requests;
+using api.Models;
+using api.Models.Requests;
 
 namespace api.Services;
 

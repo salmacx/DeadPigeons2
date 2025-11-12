@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Sieve.Models;
 using Sieve.Services;
 
-namespace api.DTOs.Requests.SieveProcessors;
+namespace api.Etc;
 
 /// <summary>
 ///     Custom Sieve processor with fluent API configuration for entities

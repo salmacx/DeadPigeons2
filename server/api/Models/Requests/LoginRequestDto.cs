@@ -1,4 +1,4 @@
-namespace api.DTOs.Requests;
+namespace api.Models.Requests;
 
 public class LoginRequestDto
 {

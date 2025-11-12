@@ -1,24 +1,33 @@
-using api.DTOs.Requests;
+using System.Text.Json;
+using api.Etc;
+using api.Models.Requests;
 using api.Services;
 using dataccess;
 
 namespace tests;
 
-public class SetupTests(MyDbContext ctx, IAuthService authService)
+public class SetupTests(MyDbContext ctx,
+    ISeeder seeder,
+    ITestOutputHelper outputHelper,
+    IAuthService authService)
 {
-    [Fact]
-    public void XunitDependencyInjectionCanFindService()
-    {
-        Assert.Equal(0, ctx.Authors.ToList().Count);
-    }
 
     [Fact]
-    public async Task TimeProviderTimestamptsAsJan1_2000()
+    public async Task RegisterReturnsJwtWhichCanVerifyAgain()
     {
         var result = await authService.Register(new RegisterRequestDto
         {
             Email = "tes@email.dk",
             Password = "asædkjlsadjsadjlksad"
         });
+        outputHelper.WriteLine(result.Token);
+        var token = await authService.VerifyAndDecodeToken(result.Token); //Does not throw is the "assertion" here
+        outputHelper.WriteLine(JsonSerializer.Serialize(token));
+    }
+
+    [Fact]
+    public async Task SeederDoesNotThrowException()
+    {
+        await seeder.Seed();
     }
 }

@@ -1,7 +1,12 @@
 import type {ProblemDetails} from "@core/problemdetails.ts";
 import toast from "react-hot-toast";
-import {resolveRefs} from "dotnet-json-refs";
 
+/**
+ * This fetch http client attaches JWT from localstorage
+ * and toasts if http requests fail.
+ * Note: circular reference resolution is handled at the API client level,
+ * not here, because JSON.stringify() cannot preserve circular references.
+ */
 export const customFetch = {
     fetch(url: RequestInfo, init?: RequestInit): Promise<Response> {
         const token = localStorage.getItem('jwt');
@@ -15,36 +20,15 @@ export const customFetch = {
             ...init,
             headers
         }).then(async (response) => {
-            // Clone the response FIRST before reading the body
-            const clonedResponse = response.clone();
-
+            // Handle errors by reading from one clone
             if (!response.ok) {
-                const problemDetails = (await response.json()) as ProblemDetails;
+                const errorClone = response.clone();
+                const problemDetails = (await errorClone.json()) as ProblemDetails;
                 console.log(problemDetails)
                 toast(problemDetails.title)
             }
 
-            // Check if response is JSON
-            const contentType = clonedResponse.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                try {
-                    const data = await clonedResponse.json();
-                    const resolvedData = resolveRefs(data);
-
-                    // Create a new response with resolved data
-                    return new Response(JSON.stringify(resolvedData), {
-                        status: clonedResponse.status,
-                        statusText: clonedResponse.statusText,
-                        headers: clonedResponse.headers
-                    });
-                } catch (e) {
-                    // If parsing fails, return original response
-                    return clonedResponse;
-                }
-            }
-
-            // Return original response for non-JSON responses
-            return clonedResponse;
+            return response;
         });
     }
 };

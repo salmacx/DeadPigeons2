@@ -1,4 +1,4 @@
-namespace api.DTOs.Requests.SieveProcessors;
+namespace api.Etc;
 
 public static class SieveConstants
 {

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace api.DTOs.Requests;
+namespace api.Models.Requests;
 
 public record CreateBookRequestDto
 {

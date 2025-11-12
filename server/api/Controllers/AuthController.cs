@@ -1,8 +1,9 @@
-using api.DTOs.Requests;
+using api.Models;
+using api.Models.Requests;
 using api.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api;
+namespace api.Controllers;
 
 public class AuthController(IAuthService authService) : ControllerBase
 {

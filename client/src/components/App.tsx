@@ -2,9 +2,6 @@ import {createBrowserRouter, RouterProvider} from "react-router";
 import Home from "@components/Home.tsx";
 import {DevTools} from "jotai-devtools";
 import 'jotai-devtools/styles.css'
-import Books from "@components/routes/books/Books.tsx";
-import Authors from "@components/routes/authors/Authors.tsx";
-import Genres from "@components/routes/genres/Genres.tsx";
 import {Toaster} from "react-hot-toast";
 import Auth from "@components/routes/auth/Auth.tsx";
 
@@ -17,21 +14,11 @@ function App() {
                     element: <Home/>,
                     children: [
                         {
-                            path: 'books',
-                            element: <Books/>
+                            path: '',
+                            element: <Auth />,
+                            index: true
                         },
-                        {
-                            path: 'authors',
-                            element: <Authors/>
-                        },
-                        {
-                            path: 'genres',
-                            element: <Genres/>
-                        },
-                        {
-                            path: 'auth',
-                            element: <Auth />
-                        }
+                    //     here you can just make more components: i just have a a single auth page with a quick crud test
                         
                     ]
                 }

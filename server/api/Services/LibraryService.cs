@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using api.DTOs.Requests;
+using api.Models;
+using api.Models.Requests;
 using dataccess;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
@@ -23,34 +24,6 @@ public class LibraryService(
         return query
             .Include(b => b.Genre) // Genre won't include its Books
             .Include(b => b.Authors) // Authors won't include their Books
-            .AsSplitQuery()
-            .ToListAsync();
-    }
-
-    public Task<List<Genre>> GetGenres(SieveModel sieveModel, JwtClaims requester)
-    {
-        IQueryable<Genre> query = ctx.Genres;
-
-        // Apply Sieve FIRST (filtering, sorting, pagination)
-        query = sieveProcessor.Apply(sieveModel, query);
-
-        // Include Books but DON'T include nested Authors to avoid cycles
-        return query
-            .Include(g => g.Books)
-            .AsSplitQuery()
-            .ToListAsync();
-    }
-
-    public async Task<List<Author>> GetAuthors(SieveModel sieveModel, JwtClaims requester)
-    {
-        IQueryable<Author> query = ctx.Authors;
-
-        // Normal path: Apply Sieve FIRST (filtering, sorting, pagination)
-        query = sieveProcessor.Apply(sieveModel, query);
-
-        // Include Books but DON'T include nested Genre/Authors to avoid cycles
-        return await query
-            .Include(a => a.Books)
             .AsSplitQuery()
             .ToListAsync();
     }
@@ -94,73 +67,5 @@ public class LibraryService(
         ctx.Books.Remove(book);
         await ctx.SaveChangesAsync();
         return book;
-    }
-
-    public async Task<Author> CreateAuthor(CreateAuthorRequestDto dto, JwtClaims requester)
-    {
-        Validator.ValidateObject(dto, new ValidationContext(dto), true);
-
-        var author = new Author
-        {
-            Id = Guid.NewGuid().ToString(),
-            Createdat = timeProvider.GetUtcNow().DateTime.ToUniversalTime(),
-            Name = dto.Name
-        };
-        ctx.Authors.Add(author);
-        await ctx.SaveChangesAsync();
-        return author;
-    }
-
-    public async Task<Author> UpdateAuthor(UpdateAuthorRequestDto dto, JwtClaims requester)
-    {
-        Validator.ValidateObject(dto, new ValidationContext(dto), true);
-        var author = ctx.Authors.First(a => a.Id == dto.AuthorIdForLookup);
-        await ctx.Entry(author).Collection(e => e.Books).LoadAsync();
-        author.Books.Clear();
-        dto.BooksIds.ForEach(id => author.Books.Add(ctx.Books.First(b => b.Id == id)));
-        author.Name = dto.NewName;
-        await ctx.SaveChangesAsync();
-        return author;
-    }
-
-    public async Task<Author> DeleteAuthor(string authorId, JwtClaims requester)
-    {
-        var author = ctx.Authors.First(a => a.Id == authorId);
-        ctx.Authors.Remove(author);
-        await ctx.SaveChangesAsync();
-        return author;
-    }
-
-    public async Task<Genre> CreateGenre(CreateGenreDto dto, JwtClaims requester)
-    {
-        Validator.ValidateObject(dto, new ValidationContext(dto), true);
-
-        var genre = new Genre
-        {
-            Id = Guid.NewGuid().ToString(),
-            Createdat = timeProvider.GetUtcNow().DateTime.ToUniversalTime(),
-            Name = dto.Name
-        };
-        ctx.Genres.Add(genre);
-        await ctx.SaveChangesAsync();
-        return genre;
-    }
-
-    public async Task<Genre> DeleteGenre(string genreId, JwtClaims requester)
-    {
-        var genre = ctx.Genres.First(a => a.Id == genreId);
-        ctx.Genres.Remove(genre);
-        await ctx.SaveChangesAsync();
-        return genre;
-    }
-
-    public async Task<Genre> UpdateGenre(UpdateGenreRequestDto dto, JwtClaims requester)
-    {
-        Validator.ValidateObject(dto, new ValidationContext(dto), true);
-
-        var genre = ctx.Genres.First(g => g.Id == dto.IdToLookupBy);
-        genre.Name = dto.NewName;
-        await ctx.SaveChangesAsync();
-        return genre;
     }
 }
