@@ -5,7 +5,7 @@ import 'jotai-devtools/styles.css'
 import {Toaster} from "react-hot-toast";
 import Auth from "@components/routes/auth/Auth.tsx";
 import PlayerDashboard from "@components/dashboard/Dashboard.tsx";
-import PlayPage from "@components/dashboard/pages/PlayPage.tsx";
+import PlayPage from "@components/dashboard/pages/Playpage.tsx";
 import MyBoardsPage from "@components/dashboard/pages/MyBoardsPage.tsx";
 import PlayerHistoryPage from "@components/dashboard/pages/PlayerHistoryPage.tsx";
 import AdminDashboard from "@components/dashboard/AdminDashboard.tsx";

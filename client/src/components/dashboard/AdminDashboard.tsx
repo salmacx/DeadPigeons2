@@ -46,7 +46,7 @@ export default function AdminDashboard() {
                         />
                         <div>
                             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Jerne IF Admin</p>
-                            <h1 className="text-2xl font-semibold text-slate-900">Dead Pigeons Admin's Dashboard</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900">Dead Pigeons</h1>
                             <p className="text-sm text-slate-500">{currentUser ? `Signed in as ${currentUser.name}` : "Session ended"}</p>
                         </div>
                     </div>
