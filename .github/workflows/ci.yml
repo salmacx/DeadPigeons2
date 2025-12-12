@@ -3,10 +3,10 @@ name: CI (Client + Server)
 on:
   push:
     branches:
-      - feature/github-actions
+      - "**"
   pull_request:
     branches:
-      - feature/github-actions
+      - "**"
 
 jobs:
   client:
