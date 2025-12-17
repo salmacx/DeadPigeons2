@@ -1,5 +1,5 @@
 using api.Models;
-using Infrastructure.Postgres.Scaffolding;
+using efscaffold;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

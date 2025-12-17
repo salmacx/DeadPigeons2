@@ -1,11 +1,12 @@
 using api.Models;
-using dataccess;
+using efscaffold;
 using Microsoft.EntityFrameworkCore;
 using NJsonSchema.CodeGeneration.TypeScript;
 using NSwag;
 using NSwag.CodeGeneration.TypeScript;
 using NSwag.Generation;
 using NSwag.Generation.Processors;
+using Testcontainers.PostgreSql;
 
 namespace api.Etc;
 
@@ -137,32 +138,16 @@ public static class DiExtensions
 
     public static void AddMyDbContext(this IServiceCollection services)
     {
-        services.AddDbContext<MyDbContext>((serviceProvider, options) =>
-        {
-            // read config from standard .NET configuration
-            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new Exception("DATABASE_URL not set in environment variables.");
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                connectionString = serviceProvider
-                    .GetRequiredService<AppOptions>()
-                    .Db;
-            }
-
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException(
-                    "PostgreSQL connection string is not configured."
-                );
-            }
-
-            options.UseNpgsql(connectionString);
-        });
-    
+        services.AddDbContext<MyDbContext>(
+            (serviceProvider, options) => { options.UseNpgsql(connectionString); },
+            ServiceLifetime.Transient
+        );
     }
-
+    
     public static void InjectAppOptions(this IServiceCollection services)
     {
         services.AddSingleton<AppOptions>(provider =>
