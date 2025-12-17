@@ -1,12 +1,14 @@
 using System.Text.Json.Serialization;
 using api.Etc;
+using api.Helpers;
 using api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NSwag;
 using Scalar.AspNetCore;
 using Sieve.Models;
 using Sieve.Services;
-using MyDbContext = Infrastructure.Postgres.Scaffolding.MyDbContext;
+using MyDbContext = efscaffold.MyDbContext;
 
 namespace api;
 
@@ -22,7 +24,6 @@ public class Program
             opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
             opts.JsonSerializerOptions.MaxDepth = 128;
         });
-
         
         services.AddOpenApiDocument(config =>
         {
@@ -33,6 +34,17 @@ public class Program
                 document.Info.Description = "API for the Dead Pigeons bingo project.";
             };
            // config.AddStringConstants(typeof(SieveConstants));
+           
+           config.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme
+           {
+               Type = OpenApiSecuritySchemeType.ApiKey,
+               Name = "Authorization",
+               In = OpenApiSecurityApiKeyLocation.Header,
+               Description = "Enter 'Bearer {your JWT token}'"
+           });
+
+           config.OperationProcessors.Add(
+               new NSwag.Generation.Processors.Security.AspNetCoreOperationSecurityScopeProcessor("JWT"));
         });
 
         services.AddCors();
@@ -56,16 +68,27 @@ public class Program
 
     public static void Main()
     {
+        DotNetEnv.Env.Load();
+
         var builder = WebApplication.CreateBuilder();
+        
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-        builder.Services.AddDbContext<MyDbContext>(conf =>
-        {
-            conf.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-
-        });
+            builder.Services.AddDbContext<MyDbContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+            });
+            
         ConfigureServices(builder.Services);
         
         var app = builder.Build();
+        
+        app.UseExceptionHandler(config => { });
+        app.UseOpenApi();
+        app.UseSwaggerUi();
+        app.MapScalarApiReference(options => options.OpenApiRoutePattern = "/swagger/v1/swagger.json");
+        app.UseCors(config => config.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().SetIsOriginAllowed(x => true));
+        app.MapControllers();
         
         // Admins
         app.MapGet("/admins", async ([FromServices] MyDbContext dbContext) =>
@@ -108,15 +131,8 @@ public class Program
             var objects = await dbContext.Winningboards.ToListAsync();
             return Results.Ok(objects);
         });
-       
-        app.UseExceptionHandler(config => { });
-        app.UseOpenApi();
-        app.UseSwaggerUi();
-        app.MapScalarApiReference(options => options.OpenApiRoutePattern = "/swagger/v1/swagger.json"
-        );
-        app.UseCors(config => config.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().SetIsOriginAllowed(x => true));
-        app.MapControllers();
-        app.GenerateApiClientsFromOpenApi("/../../client/src/core/generated-client.ts").GetAwaiter().GetResult();
+        
+        //app.GenerateApiClientsFromOpenApi("/../../client/src/core/generated-client.ts").GetAwaiter().GetResult();
 
         if (app.Environment.IsDevelopment())
             using (var scope = app.Services.CreateScope())

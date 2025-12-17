@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MyDbContext = Infrastructure.Postgres.Scaffolding.MyDbContext;
+using MyDbContext = efscaffold.MyDbContext;
 using api.Models;
 using efscaffold.Entities;
 

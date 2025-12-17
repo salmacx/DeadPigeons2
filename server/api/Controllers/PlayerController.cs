@@ -1,8 +1,8 @@
+using api.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MyDbContext = Infrastructure.Postgres.Scaffolding.MyDbContext;
-using api.Models;
-using efscaffold.Entities; // Make sure your Player class is here
+using MyDbContext = efscaffold.MyDbContext;
+using efscaffold.Entities;
 
 namespace api.Controllers;
 
@@ -24,30 +24,37 @@ public class PlayerController : ControllerBase
         return Ok(players);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
     {
+        // Token validation
+        var token = Request.Headers["X-Auth-Token"].FirstOrDefault();
+        if (token == null) return Unauthorized("No token");
+        var secret = Environment.GetEnvironmentVariable("JWT_SECRET");
+        if (string.IsNullOrWhiteSpace(secret)) return StatusCode(500, "JWT_SECRET missing");
+        var playerId = JwtValidator.ValidateToken(token, secret);
+        if (playerId == null || playerId != id.ToString()) return Unauthorized("Invalid token");
+
         var player = await _db.Players.FindAsync(id);
         if (player == null) return NotFound();
+
         return Ok(player);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(Player player)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] Player updatedPlayer)
     {
-        player.PlayerId = Guid.NewGuid();
-        _db.Players.Add(player);
-        await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(Get), new { id = player.PlayerId }, player);
-    }
+        // Token validation
+        var token = Request.Headers["X-Auth-Token"].FirstOrDefault();
+        if (token == null) return Unauthorized("No token");
+        var secret = Environment.GetEnvironmentVariable("JWT_SECRET");
+        if (string.IsNullOrWhiteSpace(secret)) return StatusCode(500, "JWT_SECRET missing");
+        var playerId = JwtValidator.ValidateToken(token, secret);
+        if (playerId == null || playerId != id.ToString()) return Unauthorized("Invalid token");
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, Player updatedPlayer)
-    {
         var player = await _db.Players.FindAsync(id);
         if (player == null) return NotFound();
 
-        // Update fields
         player.FirstName = updatedPlayer.FirstName;
         player.LastName = updatedPlayer.LastName;
         player.Email = updatedPlayer.Email;
@@ -59,9 +66,17 @@ public class PlayerController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        // Token validation
+        var token = Request.Headers["X-Auth-Token"].FirstOrDefault();
+        if (token == null) return Unauthorized("No token");
+        var secret = Environment.GetEnvironmentVariable("JWT_SECRET");
+        if (string.IsNullOrWhiteSpace(secret)) return StatusCode(500, "JWT_SECRET missing");
+        var playerId = JwtValidator.ValidateToken(token, secret);
+        if (playerId == null || playerId != id.ToString()) return Unauthorized("Invalid token");
+
         var player = await _db.Players.FindAsync(id);
         if (player == null) return NotFound();
 

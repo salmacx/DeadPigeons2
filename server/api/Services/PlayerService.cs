@@ -1,5 +1,5 @@
+using efscaffold;
 using efscaffold.Entities;
-using Infrastructure.Postgres.Scaffolding;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Services;

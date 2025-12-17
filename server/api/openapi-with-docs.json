@@ -166,6 +166,72 @@
         }
       }
     },
+    "/api/auth/login/player": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_PlayerLogin",
+        "requestBody": {
+          "x-name": "dto",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login/admin": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_AdminLogin",
+        "requestBody": {
+          "x-name": "dto",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Board": {
       "get": {
         "tags": [
@@ -983,6 +1049,25 @@
           },
           "passwordHash": {
             "type": "string"
+          }
+        }
+      },
+      "LoginRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },
