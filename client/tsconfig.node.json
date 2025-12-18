@@ -13,6 +13,7 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "emitDeclarationOnly": true,
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
@@ -20,6 +21,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "composite": true,
     "typeRoots": [
       "./types",
       "./node_modules/@types"
