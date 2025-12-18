@@ -3,6 +3,7 @@ import type {FormEvent} from "react";
 import toast from "react-hot-toast";
 import {transactionsApi, type SubmitTransactionDto, type TransactionResponseDto} from "@utilities/transactionsApi.ts";
 
+
 const defaultDto: SubmitTransactionDto = {
     mobilePayReqId: "",
     amount: 0

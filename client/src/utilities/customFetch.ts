@@ -14,7 +14,7 @@ export const customFetch = {
 
         if (token) {
             const authHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-            headers.set('Authorization', authHeader);
+            headers.set('Authorization', authHeader);        
         }
 
         return fetch(url, {

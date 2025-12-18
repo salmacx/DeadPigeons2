@@ -36,6 +36,8 @@ async function extractToken(response: { data: Blob; headers?: Record<string, str
     }
 
 }
+
+
 export default function Auth() {
 
     const navigate = useNavigate();
@@ -93,9 +95,8 @@ export default function Auth() {
         }
     };
 
-
     const canSubmit = credentials.email.trim() !== "" && credentials.password.trim() !== "";
-
+    
     return (
 
         <div className="min-h-screen bg-[#f8f1e7] px-6 py-12 text-slate-800">
@@ -110,8 +111,8 @@ export default function Auth() {
                             <h1 className="text-3xl font-semibold text-slate-700">Sign in to your dashboard</h1>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#fefbf7] p-2">
-                    {(["player", "admin"] as LoginRole[]).map((option) => (
+                        <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#fefbf7] p-2">
+                            {(["player", "admin"] as LoginRole[]).map((option) => (
                         <button
                             key={option}
                             type="button"
@@ -122,35 +123,36 @@ export default function Auth() {
                                     : "text-slate-600 hover:bg-orange-50"
                             }`}
                         >
+                            
                             {option === "player" ? "Player" : "Admin"}
                         </button>
                     ))}
                 </div>
-                <label className="form-control">
-                    <span className="label-text mb-1 text-sm text-slate-600">Email</span>
-                    <input
-                        className="input input-bordered w-full"
-                        placeholder="you@example.com"
-                        value={credentials.email}
-                        onChange={(e) => setCredentials({...credentials, email: e.target.value})}
-                        type="email"
-                        autoComplete="email"
-                        required
-                    />
-                </label>
+                        <label className="form-control">
+                            <span className="label-text mb-1 text-sm text-slate-600">Email</span>
+                            <input
+                                className="input input-bordered w-full"
+                                placeholder="you@example.com"
+                                value={credentials.email}
+                                onChange={(e) => setCredentials({...credentials, email: e.target.value})}
+                                type="email"
+                                autoComplete="email"
+                                required
+                            />
+                        </label>
+                        <label className="form-control">
+                            <span className="label-text mb-1 text-sm text-slate-600">Password</span>
+                            <input
+                                className="input input-bordered w-full"
+                                placeholder="••••••••"
+                                value={credentials.password}
+                                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                                type="password"
+                                autoComplete="current-password"
+                                required
+                            />
+                        </label>
 
-                <label className="form-control">
-                    <span className="label-text mb-1 text-sm text-slate-600">Password</span>
-                    <input
-                        className="input input-bordered w-full"
-                        placeholder="••••••••"
-                        value={credentials.password}
-                        onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                        type="password"
-                        autoComplete="current-password"
-                        required
-                    />
-                </label>
                 <button
                     className="btn btn-primary w-full"
                     disabled={!canSubmit || isSubmitting}
@@ -158,10 +160,9 @@ export default function Auth() {
                 >
                     {isSubmitting ? "Signing in…" : `Sign in as ${role === "player" ? "Player" : "Admin"}`}
                 </button>
-                    </div>
                 </div>
             </div>
+            </div>
         </div>
-
     );
 }

@@ -138,10 +138,10 @@ public static class DiExtensions
 
     public static void AddMyDbContext(this IServiceCollection services)
     {
-    //db configured in program.cs
+        
+          
     }
-
-
+    
     public static void InjectAppOptions(this IServiceCollection services)
     {
         services.AddSingleton<AppOptions>(provider =>

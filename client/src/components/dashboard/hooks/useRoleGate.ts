@@ -1,7 +1,7 @@
-import {useNavigate} from "react-router";
-import {currentUserAtom, type DashboardUser} from "../state/gameAtoms";
-import {useEffect} from "react";
-import {useAtom} from "jotai";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { currentUserAtom, type DashboardUser } from "../state/gameAtoms";
 
 export function useRoleGate(requiredRole: DashboardUser["role"]) {
     const [currentUser, setCurrentUser] = useAtom(currentUserAtom);
@@ -14,10 +14,11 @@ export function useRoleGate(requiredRole: DashboardUser["role"]) {
 
         if (!token || storedRole !== requiredRole) {
             setCurrentUser(null);
-            navigate("/auth", {replace: true});
+            navigate("/auth", { replace: true });
             return;
         }
 
+        // Ensure atom is populated (or consistent) after refresh
         if (!currentUser || currentUser.role !== storedRole) {
             setCurrentUser({
                 name: storedName ?? "Authenticated User",
@@ -26,5 +27,5 @@ export function useRoleGate(requiredRole: DashboardUser["role"]) {
         }
     }, [currentUser, requiredRole, navigate, setCurrentUser]);
 
-    return currentUser && currentUser.role === requiredRole ? currentUser : null;
+    return currentUser?.role === requiredRole ? currentUser : null;
 }

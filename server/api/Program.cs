@@ -4,6 +4,7 @@ using api.Helpers;
 using api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NSwag;
 using Scalar.AspNetCore;
 using Sieve.Models;
@@ -72,11 +73,12 @@ public class Program
 
         var builder = WebApplication.CreateBuilder();
         
-      builder.Services.AddDbContext<MyDbContext>(conf =>
-              {
-                  conf.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-
-              });
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+        
+        builder.Services.AddDbContext<MyDbContext>(options =>
+        {
+            options.UseNpgsql(connectionString);
+        });
             
         ConfigureServices(builder.Services);
         

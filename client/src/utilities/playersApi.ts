@@ -32,7 +32,14 @@ export const playersApi = {
         });
 
         if (!response.ok) throw new Error("Failed to fetch players");
-        return await response.json() as PlayerResponseDto[];
+
+        const data: any = await response.json();
+
+        // Handles both normal arrays and EF "$values" shape
+        if (Array.isArray(data)) return data as PlayerResponseDto[];
+        if (data && Array.isArray(data.$values)) return data.$values as PlayerResponseDto[];
+
+        return[];
     },
 
     async create(dto: PlayerCreateDto): Promise<PlayerResponseDto> {

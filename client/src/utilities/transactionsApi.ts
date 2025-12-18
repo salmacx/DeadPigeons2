@@ -48,12 +48,19 @@ export const transactionsApi = {
             `${baseUrl}/api/Transactions${query ? `?${query}` : ""}`,
             {
                 method: "GET",
-                headers: jsonHeaders
+                headers: jsonHeaders,
             }
         );
 
         if (!response.ok) throw new Error("Failed to fetch transactions");
-        return await response.json() as AdminTransactionListItem[];
+
+        const data: any = await response.json();
+
+        // Accept both: [ ... ]  OR  { $values: [ ... ] }
+        if (Array.isArray(data)) return data as AdminTransactionListItem[];
+        if (data && Array.isArray(data.$values)) return data.$values as AdminTransactionListItem[];
+
+        return [];
     },
 
     async updateStatus(transactionId: string, status: UpdateTransactionStatusDto["status"]): Promise<void> {

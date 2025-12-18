@@ -36,8 +36,16 @@ export default function AdminDashboardPage() {
                     transactionsApi.list()
                 ]);
 
-                setPlayers(playersResponse ?? []);
-                setTransactions(transactionResponse ?? []);
+                const nextPlayers = Array.isArray(playersResponse) ? playersResponse : [];
+                const nextTransactions = Array.isArray(transactionResponse) ? transactionResponse : [];
+
+                if (!Array.isArray(playersResponse) || !Array.isArray(transactionResponse)) {
+                    toast.error("Unexpected dashboard data format.");
+                }
+
+                setPlayers(nextPlayers);
+                setTransactions(nextTransactions);
+
             } catch (error) {
                 console.error(error);
                 toast.error("Could not load dashboard metrics.");
