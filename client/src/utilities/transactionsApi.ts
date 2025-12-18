@@ -1,4 +1,3 @@
-import type {SubmitTransactionDto, TransactionResponseDto, UpdateTransactionStatusDto} from "@core/generated-client.ts";
 import {baseUrl} from "@core/baseUrl.ts";
 import {customFetch} from "@utilities/customFetch.ts";
 
@@ -13,6 +12,25 @@ export type AdminTransactionListItem = {
     status: "Pending" | "Approved" | "Rejected" | string;
     timestamp: string;
 };
+
+export type SubmitTransactionDto = {
+    mobilePayReqId: string;
+    amount: number;
+};
+
+export type TransactionResponseDto = {
+    transactionId: string;
+    playerId: string;
+    mobilePayReqId: string;
+    amount: number;
+    status: string;
+    timestamp: string;
+};
+
+export type UpdateTransactionStatusDto = {
+    status: "Pending" | "Approved" | "Rejected" | string;
+};
+
 
 const jsonHeaders = {
     "Accept": "application/json"
