@@ -190,7 +190,7 @@ public class TransactionController : ControllerBase
     // =========================
 
     // POST /api/transaction/submit
-    // Player submits transaction number + amount. Status forced to Pending.
+    // Player submits transaction number + amount. Status forced Pending.
     [HttpPost("submit")]
     [ProducesResponseType(typeof(TransactionResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
