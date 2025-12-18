@@ -18,7 +18,7 @@ public class Program
     {
         services.AddSingleton(TimeProvider.System);
         services.InjectAppOptions();
-        services.AddMyDbContext();
+        //services.AddMyDbContext();
         services.AddControllers().AddJsonOptions(opts =>
         {
             opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
@@ -72,12 +72,11 @@ public class Program
 
         var builder = WebApplication.CreateBuilder();
         
-        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+      builder.Services.AddDbContext<MyDbContext>(conf =>
+              {
+                  conf.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 
-            builder.Services.AddDbContext<MyDbContext>(options =>
-            {
-                options.UseNpgsql(connectionString);
-            });
+              });
             
         ConfigureServices(builder.Services);
         
