@@ -333,4 +333,37 @@ public class TransactionController : ControllerBase
 
         return Ok(result);
     }
+    
+    // GET /api/transaction/me/balance
+    [HttpGet("me/balance")]
+    public async Task<IActionResult> GetMyBalance(
+        [FromHeader(Name = "X-Player-Id")] Guid playerId,
+        CancellationToken ct)
+    {
+        if (playerId == Guid.Empty)
+            return BadRequest(new { message = "Missing or invalid X-Player-Id header." });
+
+        var approvedDeposits = await _db.Transactions
+            .AsNoTracking()
+            .Where(t => t.PlayerId == playerId && t.Status == "Approved")
+            .Select(t => (decimal?)t.Amount)
+            .SumAsync(ct) ?? 0m;
+
+        var spent = await _db.Boards
+            .AsNoTracking()
+            .Where(b => b.PlayerId == playerId)
+            .Select(b => (decimal?)b.Price)
+            .SumAsync(ct) ?? 0m;
+
+        var balance = approvedDeposits - spent;
+
+        return Ok(new
+        {
+            playerId,
+            approvedDeposits,
+            spent,
+            balance
+        });
+    }
+
 }
