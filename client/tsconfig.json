@@ -15,6 +15,7 @@
     },
     {
       "path": "./src/components/tsconfig.json"
-    }
-  ]
+    },
+  ],
+  "exclude": ["src/utilities/libraryApi.ts"]
 }
