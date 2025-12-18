@@ -17,5 +17,6 @@
       "path": "./src/components/tsconfig.json"
     },
   ],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["src/utilities/libraryApi.ts"]
 }
