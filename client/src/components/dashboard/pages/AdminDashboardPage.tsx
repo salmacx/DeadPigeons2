@@ -2,11 +2,13 @@ import {useEffect, useMemo, useState} from "react";
 import toast from "react-hot-toast";
 import {playersApi, type PlayerResponseDto} from "@utilities/playersApi.ts";
 import {transactionsApi, type AdminTransactionListItem} from "@utilities/transactionsApi.ts";
+import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
 
 type AdminStats = {
     totalPlayers: number;
     activePlayers: number;
     pendingDeposits: number;
+    gameState: string;
 };
 
 const notices = [
@@ -26,25 +28,29 @@ export default function AdminDashboardPage() {
     
     const [players, setPlayers] = useState<PlayerResponseDto[]>([]);
     const [transactions, setTransactions] = useState<AdminTransactionListItem[]>([]);
+    const [games, setGames] = useState<GameDto[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [playersResponse, transactionResponse] = await Promise.all([
+                const [playersResponse, transactionResponse, gamesResponse] = await Promise.all([
                     playersApi.getAll(),
-                    transactionsApi.list()
+                    transactionsApi.list(),
+                    gamesApi.getAll()
                 ]);
 
                 const nextPlayers = Array.isArray(playersResponse) ? playersResponse : [];
                 const nextTransactions = Array.isArray(transactionResponse) ? transactionResponse : [];
+                const nextGames = Array.isArray(gamesResponse) ? gamesResponse : [];
 
-                if (!Array.isArray(playersResponse) || !Array.isArray(transactionResponse)) {
+                if (!Array.isArray(playersResponse) || !Array.isArray(transactionResponse)  || !Array.isArray(gamesResponse)) {
                     toast.error("Unexpected dashboard data format.");
                 }
 
                 setPlayers(nextPlayers);
                 setTransactions(nextTransactions);
+                setGames(nextGames);
 
             } catch (error) {
                 console.error(error);
@@ -57,11 +63,26 @@ export default function AdminDashboardPage() {
         load();
     }, []);
 
-    const stats: AdminStats = useMemo(() => ({
-        totalPlayers: players.length,
-        activePlayers: players.filter((player) => player.isActive).length,
-        pendingDeposits: transactions.filter((tx) => tx.status === "Pending").length
-    }), [players, transactions]);
+    const stats: AdminStats = useMemo(() => {
+        const latestGame = [...games].sort((a, b) => new Date(b.expirationDate).getTime() - new Date(a.expirationDate).getTime())[0];
+        const hasNumbers = (latestGame?.winningNumbers?.length ?? 0) >= 3;
+        const isExpired = latestGame ? new Date(latestGame.expirationDate) < new Date() : false;
+
+        const gameState = !latestGame
+            ? "Not started"
+            : hasNumbers && isExpired
+                ? "Finished"
+                : hasNumbers
+                    ? "Running (ends Saturday)"
+                    : "Not started";
+
+        return {
+            totalPlayers: players.length,
+            activePlayers: players.filter((player) => player.isActive).length,
+            pendingDeposits: transactions.filter((tx) => tx.status === "Pending").length,
+            gameState
+        };
+    }, [games, players, transactions]);
     
     return (
         <section className="space-y-6">
@@ -85,7 +106,8 @@ export default function AdminDashboardPage() {
                     value: stats.pendingDeposits
                 }, {
                     label: "Current week",
-                    value: "Week 47"
+                    value: stats.gameState,
+                    helper: stats.gameState === "Running (ends Saturday)" ? "Game ends Saturday" : undefined
                 }].map((stat) => (
 
                     <article key={stat.label}
@@ -94,6 +116,9 @@ export default function AdminDashboardPage() {
                         <p className="mt-2 text-3xl font-semibold text-slate-900">
                             {loading ? "…" : stat.value}
                         </p>
+                        {stat.helper && !loading && (
+                            <p className="mt-1 text-xs text-slate-500">{stat.helper}</p>
+                        )}
                     </article>
                 ))}
             </div>

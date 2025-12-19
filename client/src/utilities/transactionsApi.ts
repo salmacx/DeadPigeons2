@@ -95,5 +95,19 @@ export const transactionsApi = {
 
         if (!response.ok) throw new Error("Failed to submit transaction");
         return await response.json() as TransactionResponseDto;
+
+    },
+
+    async getBalance(playerId: string): Promise<{ playerId: string; approvedDeposits: number; spent: number; balance: number }> {
+        const response = await customFetch.fetch(`${baseUrl}/api/transaction/me/balance`, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "X-Player-Id": playerId
+            }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch balance");
+        return await response.json();
     }
 };
