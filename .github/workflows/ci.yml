@@ -55,23 +55,30 @@ jobs:
         run: dotnet build DeadPigeon.sln --configuration Release --no-restore
 
       - name: Test backend
+        working-directory: server/tests
         env:
           DOTNET_NOLOGO: true
         run: |
-          dotnet test DeadPigeon.sln \
+          dotnet test ../../DeadPigeon.sln \
             --configuration Release \
             --no-build \
             --logger "console;verbosity=detailed" \
-            --results-directory server/tests/TestResults
+            --results-directory TestResults
 
       - name: Print test logs if failed
         if: failure()
+        working-directory: server/tests
         run: |
-          echo "==== TestResults directory ===="
-          ls -R server/tests/TestResults || true
+          echo "==== server/tests/TestResults ===="
+          ls -R TestResults || true
 
           echo "==== .log files ===="
-          find server/tests/TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
+          find TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
 
           echo "==== .trx files ===="
-          find server/tests/TestResults -type f -name "*.trx" -print -exec sed -n '1,200p' {} \; || true
+          find TestResults -type f -name "*.trx" -print -exec sed -n '1,200p' {} \; || true
+
+          echo "==== ALSO check default bin TestResults (dotnet sometimes writes here) ===="
+          ls -R bin/Release/net9.0/TestResults || true
+          find bin/Release/net9.0/TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
+
