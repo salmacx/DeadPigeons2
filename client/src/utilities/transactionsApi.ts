@@ -100,7 +100,9 @@ export const transactionsApi = {
 
     },
 
-    async getBalance(playerId: string): Promise<{ playerId: string; approvedDeposits: number; spent: number; balance: number }> {
+    async getBalance(
+        playerId: string
+    ): Promise<{ playerId: string; approvedDeposits: number; spent: number; balance: number }> {
         const response = await customFetch.fetch(`${baseUrl}/api/transaction/me/balance`, {
             method: "GET",
             headers: {
