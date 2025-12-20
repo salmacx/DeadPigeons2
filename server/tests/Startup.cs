@@ -6,8 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using Testcontainers.PostgreSql;
-using System.Collections.Generic;
-using Microsoft.Extensions.Configuration;
 
 namespace tests;
 
@@ -16,10 +14,7 @@ public class Startup
     public static void ConfigureServices(IServiceCollection services)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>())
-            .Build();
-        Program.ConfigureServices(services, configuration);
+        Program.ConfigureServices(services);
         services.RemoveAll(typeof(MyDbContext));
         services.AddScoped<MyDbContext>(factory =>
         {

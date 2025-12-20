@@ -10,6 +10,7 @@ export type BoardDto = {
     timestamp: string;
 };
 
+
 export type WinningBoardDto = {
     winningboardId: string;
     boardId: string;
@@ -38,7 +39,7 @@ function normalizeArray<T>(data: unknown): T[] {
     return [];
 }
 
-function normalizeNumbers(raw: unknown): number[] {
+export function normalizeNumbers(raw: unknown): number[] {
     if (Array.isArray(raw)) return raw.map(Number);
     if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
         return (raw as any).$values.map(Number);

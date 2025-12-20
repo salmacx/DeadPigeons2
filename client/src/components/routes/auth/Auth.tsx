@@ -118,20 +118,21 @@ export default function Auth() {
     
     return (
 
-        <div className="min-h-screen bg-[#f8f1e7] px-6 py-12 text-slate-800">
-
-            <div className="mx-auto max-w-lg space-y-6 rounded-3xl bg-white/80 p-8 shadow-lg shadow-orange-100">
-                <div className="min-h-screen bg-gradient-to-br from-[#fef3ec] via-[#fffaf6] to-[#f3f4ff] px-4 py-12 text-slate-800">
-                    <div className="mx-auto flex max-w-5xl flex-col gap-8 rounded-3xl bg-white/80 p-8 shadow-2xl shadow-orange-100/60 backdrop-blur">
-                        <div className="flex flex-col gap-2 text-center">
-                    <span className="mx-auto inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#f1812c]">
+        <div
+            className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fef3ec] via-[#fffaf6] to-[#f3f4ff] px-4 py-12 text-slate-800">
+            <div className="w-full max-w-xl space-y-6 rounded-3xl bg-white/90 p-10 shadow-2xl shadow-orange-100">
+                <div className="flex flex-col gap-2 text-center">
+                    <span
+                        className="mx-auto inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#f1812c]">
                         Dead Pigeons
                     </span>
-                            <h1 className="text-3xl font-semibold text-slate-700">Sign in to your dashboard</h1>
+                    <h1 className="text-3xl font-semibold text-slate-700">Sign in to your dashboard</h1>
+                    <p className="text-sm text-slate-500">Use the role toggle to switch between Player and Admin
+                        login.</p>
                 </div>
 
-                        <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#fefbf7] p-2">
-                            {(["player", "admin"] as LoginRole[]).map((option) => (
+                <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#fefbf7] p-2">
+                    {(["player", "admin"] as LoginRole[]).map((option) => (
                         <button
                             key={option}
                             type="button"
@@ -142,46 +143,47 @@ export default function Auth() {
                                     : "text-slate-600 hover:bg-orange-50"
                             }`}
                         >
-                            
+
                             {option === "player" ? "Player" : "Admin"}
                         </button>
                     ))}
                 </div>
-                        <label className="form-control">
-                            <span className="label-text mb-1 text-sm text-slate-600">Email</span>
-                            <input
-                                className="input input-bordered w-full"
-                                placeholder="you@example.com"
-                                value={credentials.email}
-                                onChange={(e) => setCredentials({...credentials, email: e.target.value})}
-                                type="email"
-                                autoComplete="email"
-                                required
-                            />
-                        </label>
-                        <label className="form-control">
-                            <span className="label-text mb-1 text-sm text-slate-600">Password</span>
-                            <input
-                                className="input input-bordered w-full"
-                                placeholder="••••••••"
-                                value={credentials.password}
-                                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                                type="password"
-                                autoComplete="current-password"
-                                required
-                            />
-                        </label>
+                <div className="space-y-4">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                        Email
+                        <input
+                            className="rounded-2xl border border-orange-100 px-4 py-3 text-sm shadow-inner focus:border-orange-300 focus:outline-none"
+                            placeholder="you@example.com"
+                            value={credentials.email}
+                            onChange={(e) => setCredentials({...credentials, email: e.target.value})}
+                            type="email"
+                            autoComplete="email"
+                            required
+                        />
+                    </label>
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                        Password
+                        <input
+                            className="rounded-2xl border border-orange-100 px-4 py-3 text-sm shadow-inner focus:border-orange-300 focus:outline-none"
+                            placeholder="••••••••"
+                            value={credentials.password}
+                            onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                            type="password"
+                            autoComplete="current-password"
+                            required
+                        />
+                    </label>
+                </div>
 
                 <button
-                    className="btn btn-primary w-full"
+                    className="w-full rounded-full bg-[#f7a166] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 disabled:cursor-not-allowed disabled:opacity-70"
                     disabled={!canSubmit || isSubmitting}
                     onClick={handleLogin}
                 >
                     {isSubmitting ? "Signing in…" : `Sign in as ${role === "player" ? "Player" : "Admin"}`}
                 </button>
-                </div>
-            </div>
-            </div>
-        </div>
-    );
+</div>
+</div>
+)
+    ;
 }
