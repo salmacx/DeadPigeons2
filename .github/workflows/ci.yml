@@ -64,4 +64,18 @@ jobs:
         working-directory: .
         env:
           DOTNET_NOLOGO: true
-        run: dotnet test DeadPigeon.sln --configuration Release --no-build --verbosity normal
+        run: |
+          dotnet test DeadPigeon.sln \
+            --configuration Release \
+            --no-build \
+            --logger "console;verbosity=detailed" \
+            --results-directory server/tests/TestResults
+          
+          if: failure() |
+          echo "==== TestResults directory ===="
+          ls -R server/tests/TestResults || true
+          echo "==== .log files ===="
+          find server/tests/TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
+          echo "==== .trx files ===="
+          find server/tests/TestResults -type f -name "*.trx" -print -exec sed -n '1,200p' {} \; || true
+
