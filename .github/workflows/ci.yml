@@ -81,4 +81,3 @@ jobs:
           echo "==== ALSO check default bin TestResults (dotnet sometimes writes here) ===="
           ls -R bin/Release/net9.0/TestResults || true
           find bin/Release/net9.0/TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
-
