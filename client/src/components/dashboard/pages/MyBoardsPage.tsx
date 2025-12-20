@@ -6,7 +6,7 @@ import {playerSelectionAtom} from "../state/gameAtoms";
 import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
 import {boardsApi, type BoardDto,  winningBoardsApi, type WinningBoardDto} from "@utilities/boardsApi.ts";
 import {transactionsApi} from "@utilities/transactionsApi.ts";
-import { normalizeNumbers } from "@utilities/boardsApi";
+
 
 const pricing: Record<number, number> = {
     5: 20,
@@ -41,7 +41,34 @@ type BoardWithMeta = BoardDto & {
     status: BoardStatus;
     matched: number;
     winningNumbers: number[];
+    drawDate?: string | null;
 };
+
+function normalizeNumbers(raw?: unknown): number[] {
+    if (Array.isArray(raw)) return raw.map(Number);
+    if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
+        return (raw as any).$values.map(Number);
+    }
+    if (typeof raw === "string") {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed.map(Number);
+        } catch {}
+        return raw
+            .split(/[\s,]+/)
+            .map((value) => Number(value))
+            .filter(Number.isFinite);
+    }
+    return [];
+}
+
+function normalizeList<T>(raw: unknown): T[] {
+    if (Array.isArray(raw)) return raw as T[];
+    if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
+        return (raw as any).$values as T[];
+    }
+    return [];
+}
 
 export default function MyBoardsPage() {
 
@@ -85,18 +112,31 @@ export default function MyBoardsPage() {
     const refreshPlayerData = async (id: string) => {
         const trimmedId = id.trim();
         if (!trimmedId) return;
+
         setLoading(true);
         try {
-            const [balanceResponse, boardResponse, winningResponse] = await Promise.all([
-                transactionsApi.getBalance(trimmedId),
-                boardsApi.list(),
-                winningBoardsApi.list()
-            ]);
+            const [balanceResponse, boardResponse, winningResponse, gamesResponse] =
+                await Promise.all([
+                    transactionsApi.getBalance(trimmedId),
+                    boardsApi.list(),
+                    winningBoardsApi.list(),
+                    gamesApi.getAll(),
+                ]);
+
+            const allBoards = normalizeList<BoardDto>(boardResponse);
+            const allWinning = normalizeList<WinningBoardDto>(winningResponse);
+            const allGames = normalizeList<GameDto>(gamesResponse);
 
             setBalance(balanceResponse.balance);
-            const playerBoards = boardResponse.filter((board) => board.playerId === trimmedId);
+
+            const playerBoards = allBoards.filter(
+                (b) => String(b.playerId).trim() === trimmedId
+            );
+
             setBoards(playerBoards);
-            setWinningBoards(winningResponse);
+            setWinningBoards(allWinning);
+            setGames(allGames);
+            setCurrentGame(pickActiveGame(allGames));
             localStorage.setItem("playerId", trimmedId);
 
         } catch (error) {
@@ -138,7 +178,7 @@ export default function MyBoardsPage() {
     const boardsWithMeta: BoardWithMeta[] = useMemo(() => {
         return boards.map((board) => {
             const game = gameLookup.get(board.gameId);
-            const winningNumbers = game?.winningNumbers ?? [];
+            const winningNumbers = normalizeNumbers(game?.winningNumbers);
             const hasResults = (winningNumbers?.length ?? 0) >= 3;
             const matched = hasResults
                 ? board.chosenNumbers.filter((num) => winningNumbers.includes(num)).length
@@ -207,6 +247,21 @@ export default function MyBoardsPage() {
         return next;
     }, [boardsWithMeta, gameFilter, sortBy, statusFilter]);
 
+    const StatusBadge = ({ status }: { status: BoardStatus }) => {
+        const colors: Record<BoardStatus, string> = {
+            Active: "bg-amber-100 text-amber-700",
+            Winning: "bg-emerald-100 text-emerald-700",
+            Losing: "bg-slate-200 text-slate-600",
+        };
+
+        return (
+                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[status]}`}>
+      {status}
+    </span>
+        );
+    };
+
+
     const handlePurchase = async () => {
         const trimmedId = playerId.trim();
         if (!trimmedId || !currentGame) {
@@ -232,108 +287,99 @@ export default function MyBoardsPage() {
         } finally {
             setIsPurchasing(false);
         }
-};
-
-    const StatusBadge = ({status}: { status: BoardStatus }) => {
-        const colors: Record<BoardStatus, string> = {
-            Active: "bg-amber-100 text-amber-700",
-            Winning: "bg-emerald-100 text-emerald-700",
-            Losing: "bg-slate-200 text-slate-600"
-        };
-
-        return (
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[status]}`}>
-                {status}
-            </span>
-        );
     };
 
-    return (
-        <section className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Your boards</p>
-                    <h2 className="text-3xl font-semibold text-slate-900">My Boards</h2>
-                    <p className="mt-2 max-w-3xl text-slate-600">
-                        Use your balance to purchase boards for the current game. Every purchase immediately deducts
-                        from your
-                        approved deposits.
-                    </p>
+
+        return (
+            <section className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Your boards</p>
+                        <h2 className="text-3xl font-semibold text-slate-900">My Boards</h2>
+                        <p className="mt-2 max-w-3xl text-slate-600">
+                            Use your balance to purchase boards for the current game. Every purchase immediately deducts
+                            from
+                            your
+                            approved deposits.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => playerId && refreshPlayerData(playerId)}
+                        className="rounded-full bg-[#f7a166] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200"
+                    >
+                        Refresh data
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => playerId && refreshPlayerData(playerId)}
-                    className="rounded-full bg-[#f7a166] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200"
-                >
-                    Refresh data
-                </button>
-            </div>
-            <div className="rounded-3xl bg-white/80 p-6 shadow-lg shadow-orange-100">
-                <div className="grid gap-4 md:grid-cols-3">
-                    <label
-                        className="flex flex-col gap-3 rounded-2xl border border-orange-100/80 bg-[#fff7ef] p-4 text-sm font-medium text-slate-700 shadow-inner">
-                        <div
-                            className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-500">
-                            <span>Player ID</span>
+                <div className="rounded-3xl bg-white/80 p-6 shadow-lg shadow-orange-100">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <label
+                            className="flex flex-col gap-3 rounded-2xl border border-orange-100/80 bg-[#fff7ef] p-4 text-sm font-medium text-slate-700 shadow-inner">
+                            <div
+                                className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-500">
+                                <span>Player ID</span>
+                                <button
+                                    type="button"
+                                    className="text-[11px] font-semibold text-[#f1812c] hover:text-[#d96b18]"
+                                    onClick={() => {
+                                        if (playerId.trim()) {
+                                            navigator.clipboard?.writeText(playerId.trim());
+                                            toast.success("Player ID copied");
+                                        }
+                                    }}
+                                >
+                                    Copy
+                                </button>
+
+                            </div>
+                            <input
+                                value={playerId}
+                                onChange={(event) => setPlayerId(event.target.value)}
+                                className="rounded-2xl border border-orange-100 px-4 py-3 text-sm shadow-inner focus:border-orange-300 focus:outline-none"
+                                placeholder="Paste your player ID"
+                            />
+                            <span
+                                className="text-xs font-normal text-slate-500">Stored locally after you enter it once.</span>
+                        </label>
+                        <div className="rounded-2xl bg-orange-50/60 p-4 shadow-inner">
+                            <p className="text-xs uppercase tracking-wide text-slate-500">Balance</p>
+                            <p className="mt-1 text-2xl font-semibold text-slate-900">{balance !== null ? `${balance.toFixed(2)} kr` : "—"}</p>
+                            <p className="text-xs text-slate-500">Calculated from approved deposits minus boards
+                                purchased.</p>
+                        </div>
+                        <div className="rounded-2xl bg-orange-50/60 p-4 shadow-inner">
+                            <p className="text-xs uppercase tracking-wide text-slate-500">Current game</p>
+                            <p className="mt-1 text-lg font-semibold text-slate-900">{currentGame ? new Date(currentGame.expirationDate).toDateString() : "No game available"}</p>
+                            <p className="text-xs text-slate-500">{currentGame?.winningNumbers?.length ? "Winning numbers published" : "Waiting for winning numbers"}</p>
+                        </div>
+                    </div>
+
+
+                    <div className="mt-6 space-y-4">
+                        <NumberGrid selectedNumbers={selectedNumbers} onToggle={toggleNumber} maxSelectable={8}/>
+                        <div className="flex flex-col items-center gap-3 text-center">
+                            <p className="text-lg font-semibold text-slate-700">
+                                {isReady ? `Price: ${price} kr` : "Select between 5 and 8 numbers to continue"}
+                            </p>
+                            <p className="text-sm text-slate-500">5 picks = 20 kr · 6 = 40 kr · 7 = 80 kr · 8 = 160
+                                kr</p>
                             <button
                                 type="button"
-                                className="text-[11px] font-semibold text-[#f1812c] hover:text-[#d96b18]"
-                                onClick={() => {
-                                    if (playerId.trim()) {
-                                        navigator.clipboard?.writeText(playerId.trim());
-                                        toast.success("Player ID copied");
-                                    }
-                                }}
+                                onClick={handlePurchase}
+                                disabled={!isReady || isPurchasing}
+                                className={`w-48 rounded-full px-6 py-3 text-lg font-semibold transition ${
+                                    isReady
+                                        ? "bg-[#f7a166] text-white shadow-xl shadow-orange-200"
+                                        : "bg-slate-200 text-slate-500"
+                                }`}
                             >
-                                Copy
+                                {isPurchasing ? "Purchasing…" : "Buy board"}
                             </button>
                         </div>
-                        <input
-                            value={playerId}
-                            onChange={(event) => setPlayerId(event.target.value)}
-                            className="rounded-2xl border border-orange-100 px-4 py-3 text-sm shadow-inner focus:border-orange-300 focus:outline-none"
-                            placeholder="Paste your player ID"
-                        />
-                        <span
-                            className="text-xs font-normal text-slate-500">Stored locally after you enter it once.</span>
-                    </label>
-                    <div className="rounded-2xl bg-orange-50/60 p-4 shadow-inner">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">Balance</p>
-                        <p className="mt-1 text-2xl font-semibold text-slate-900">{balance !== null ? `${balance.toFixed(2)} kr` : "—"}</p>
-                        <p className="text-xs text-slate-500">Calculated from approved deposits minus boards
-                            purchased.</p>
-                    </div>
-                    <div className="rounded-2xl bg-orange-50/60 p-4 shadow-inner">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">Current game</p>
-                        <p className="mt-1 text-lg font-semibold text-slate-900">{currentGame ? new Date(currentGame.expirationDate).toDateString() : "No game available"}</p>
-                        <p className="text-xs text-slate-500">{currentGame?.winningNumbers?.length ? "Winning numbers published" : "Waiting for winning numbers"}</p>
                     </div>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                    <NumberGrid selectedNumbers={selectedNumbers} onToggle={toggleNumber} maxSelectable={8}/>
-                    <div className="flex flex-col items-center gap-3 text-center">
-                        <p className="text-lg font-semibold text-slate-700">
-                            {isReady ? `Price: ${price} kr` : "Select between 5 and 8 numbers to continue"}
-                        </p>
-                        <p className="text-sm text-slate-500">5 picks = 20 kr · 6 = 40 kr · 7 = 80 kr · 8 = 160 kr</p>
-                        <button
-                            type="button"
-                            onClick={handlePurchase}
-                            disabled={!isReady || isPurchasing}
-                            className={`w-48 rounded-full px-6 py-3 text-lg font-semibold transition ${
-                                isReady
-                                    ? "bg-[#f7a166] text-white shadow-xl shadow-orange-200"
-                                    : "bg-slate-200 text-slate-500"
-                            }`}
-                        >
-                            {isPurchasing ? "Purchasing…" : "Buy board"}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-4">
+                <div className="space-y-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Boards overview</p>
@@ -353,17 +399,6 @@ export default function MyBoardsPage() {
                                 ))}
                             </select>
                             <select
-                                value={statusFilter}
-                                onChange={(event) => setStatusFilter(event.target.value)}
-                                className="rounded-2xl border border-orange-100 bg-white px-4 py-2 shadow-inner focus:border-orange-300 focus:outline-none"
-                            >
-                                <option value="all">All statuses</option>
-                                <option value="Active">Active</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Winning">Winning</option>
-                                <option value="Losing">Losing</option>
-                            </select>
-                            <select
                                 value={sortBy}
                                 onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
                                 className="rounded-2xl border border-orange-100 bg-white px-4 py-2 shadow-inner focus:border-orange-300 focus:outline-none"
@@ -373,7 +408,8 @@ export default function MyBoardsPage() {
                                 <option value="priceHigh">Price: high to low</option>
                                 <option value="priceLow">Price: low to high</option>
                             </select>
-                            <div className="flex items-center gap-1 rounded-full bg-[#fef7ef] p-1 text-xs font-semibold text-slate-600">
+                            <div
+                                className="flex items-center gap-1 rounded-full bg-[#fef7ef] p-1 text-xs font-semibold text-slate-600">
                                 {["grid", "table"].map((mode) => (
                                     <button
                                         key={mode}
@@ -388,136 +424,139 @@ export default function MyBoardsPage() {
                                 ))}
                             </div>
                         </div>
-                </div>
-                {loading && <p className="text-slate-500">Loading your boards…</p>}
-                {!loading && filteredBoards.length === 0 && (
-                    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-orange-200 bg-[#fff7ef] p-6 text-center text-slate-600 shadow-inner">
-                        <p className="text-lg font-semibold text-slate-700">No boards yet</p>
-                        <p className="max-w-2xl text-sm">Purchase a board above to see it here instantly. Your purchases are tied to your player ID.</p>
                     </div>
-                )}
-                {viewMode === "grid" && filteredBoards.length > 0 && (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {filteredBoards.map((board) => {
-                            const game = gameLookup.get(board.gameId);
-                            const gameLabel = game
-                                ? `Game ending ${new Date(game.expirationDate).toLocaleString()}`
-                                : `Game ${board.gameId}`;
+                    {loading && <p className="text-slate-500">Loading your boards…</p>}
 
-                            const winNums = normalizeNumbers((board as any).winningNumbers);
+                    {!loading && filteredBoards.length === 0 && (
+                        <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-orange-200 bg-[#fff7ef] p-6 text-center text-slate-600 shadow-inner">
+                            <p className="text-lg font-semibold text-slate-700">No boards yet</p>
+                            <p className="max-w-2xl text-sm">Purchase a board above to see it here instantly. Use the refresh button or the "All games" filter to surface every past board tied to your player ID.</p>
+                        </div>
 
-                            const matchLabel = winNums.length
-                                ? '${board.matched}/${winNums.length} matched'
-                                : "Awaiting results";
-
-                            return (
-                                <article key={board.boardId} className="flex h-full flex-col gap-4 rounded-3xl bg-white/80 p-5 shadow-lg shadow-orange-100">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="text-sm text-slate-600">
-                                            <p className="font-semibold text-slate-900">Purchased {formatDateTime(board.timestamp)}</p>
-                                            <p>{gameLabel}</p>
-                                            <p className="text-xs uppercase tracking-wide text-slate-500">Board ID: {board.boardId}</p>
-                                        </div>
-                                        <div className="space-y-1 text-right">
-                                            <p className="text-xs uppercase tracking-wide text-slate-500">Price</p>
-                                            <p className="text-2xl font-semibold text-slate-900">{board.price} kr</p>
-                                            <StatusBadge status={board.status}/>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs text-slate-500">
-                                        <span>{matchLabel}</span>
-                                        {winNums.length > 0 && (
-                                            <span className="text-[11px] text-slate-500">
-                                                Winning numbers: {winNums.join(", ")}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs uppercase tracking-wide text-slate-500">Numbers chosen</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {board.chosenNumbers.map((number) => {
-                                            const winNums = normalizeNumbers((board as any).winningNumbers);
-                                            const isMatch = winNums.includes(number);                                            return (
-                                                <span
-                                                    key={`${board.boardId}-${number}`}
-                                                    className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                                        isMatch ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200" : "bg-[#f7a166] text-white"
-                                                    }`}
-                                                >
-                                                    {number}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {viewMode === "table" && filteredBoards.length > 0 && (
-                    <div className="overflow-x-auto rounded-3xl bg-white/90 p-4 shadow-lg shadow-orange-100">
-                        <table className="min-w-[1120px] w-full table-auto divide-y divide-orange-100 text-left text-sm">
-                            <thead className="bg-[#fef7ef] text-xs uppercase tracking-wide text-slate-500">
-                            <tr>
-                                <th className="px-6 py-3">Board</th>
-                                <th className="px-6 py-3">Game</th>
-                                <th className="px-6 py-3">Purchased</th>
-                                <th className="px-6 py-3">Price</th>
-                                <th className="px-6 py-3">Matches</th>
-                                <th className="px-6 py-3">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-orange-50">
+                    )}
+                    {viewMode === "grid" && filteredBoards.length > 0 && (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {filteredBoards.map((board) => {
                                 const game = gameLookup.get(board.gameId);
                                 const gameLabel = game
-                                    ? new Date(game.expirationDate).toLocaleDateString()
-                                    : board.gameId;
+                                    ? `Game ending ${new Date(game.expirationDate).toLocaleString()}`
+                                    : `Game ${board.gameId}`;
+                                const matchLabel = board.winningNumbers?.length
+                                    ? `Matched: ${board.matched} / ${board.winningNumbers.length}`
+                                    : "Awaiting results";
 
                                 return (
-                                    <tr key={board.boardId} className="transition hover:bg-[#fff8f0]">
-                                        <td className="px-6 py-4 font-semibold text-slate-800">{board.boardId}</td>
-                                        <td className="px-6 py-4 text-slate-600">{gameLabel}</td>
-                                        <td className="px-6 py-4 text-slate-600">{formatDateTime(board.timestamp)}</td>
-                                        <td className="px-6 py-4 text-slate-800">{board.price} kr</td>
-                                        <td className="px-6 py-4 text-slate-600">
-                                            {board.winningNumbers?.length ? `${board.matched}/${board.winningNumbers.length}` : "—"}
-                                        </td>
-                                        <td className="px-6 py-4"><StatusBadge status={board.status}/></td>
-                                    </tr>
+                                    <article key={board.boardId}
+                                             className="flex h-full flex-col gap-4 rounded-3xl bg-white/80 p-5 shadow-lg shadow-orange-100">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="text-sm text-slate-600">
+                                                <p className="font-semibold text-slate-900">Purchased {formatDateTime(board.timestamp)}</p>
+                                                <p>{gameLabel}</p>
+                                                <p className="text-xs uppercase tracking-wide text-slate-500">Board
+                                                    ID: {board.boardId}</p>
+                                            </div>
+                                            <div className="space-y-1 text-right">
+                                                <p className="text-xs uppercase tracking-wide text-slate-500">Price</p>
+                                                <p className="text-2xl font-semibold text-slate-900">{board.price} kr</p>
+                                                <StatusBadge status={board.status}/>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-slate-500">
+                                        <span>{matchLabel}</span>
+                                        {board.winningNumbers?.length > 0 && (
+                                            <span
+                                                className="text-[11px] text-slate-500">Winning numbers: {board.winningNumbers.join(", ")}</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs uppercase tracking-wide text-slate-500">Numbers chosen</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {board.chosenNumbers.map((number) => {
+                                                const isMatch = board.winningNumbers?.includes(number);
+                                                return (
+                                                    <span
+                                                        key={`${board.boardId}-${number}`}
+                                                        className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                                                            isMatch ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200" : "bg-[#f7a166] text-white"
+                                                        }`}
+                                                    >
+                                                    {number}
+                                                </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </article>
                                 );
                             })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+                        </div>
+                    )}
 
-            {celebratedBoard && (
-                <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-                    <div className="max-w-lg space-y-4 rounded-3xl bg-white p-6 shadow-2xl shadow-orange-200">
-                        <h3 className="text-2xl font-semibold text-slate-900">🎉 You won!</h3>
-                        <p className="text-slate-600">Board {celebratedBoard.boardId} matched all winning numbers.</p>
-                        <div className="rounded-2xl bg-orange-50 p-4">
-                            <p className="text-xs uppercase tracking-wide text-slate-500">Winning numbers</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {celebratedBoard.winningNumbers.map((number) => (
-                                    <span key={`win-${celebratedBoard.boardId}-${number}`} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200">
+                    {viewMode === "table" && filteredBoards.length > 0 && (
+                        <div className="overflow-x-auto rounded-3xl bg-white/90 p-4 shadow-lg shadow-orange-100">
+                            <table
+                                className="min-w-[1120px] w-full table-auto divide-y divide-orange-100 text-left text-sm">
+                                <thead className="bg-[#fef7ef] text-xs uppercase tracking-wide text-slate-500">
+                                <tr>
+                                    <th className="px-6 py-3">Board</th>
+                                    <th className="px-6 py-3">Game</th>
+                                    <th className="px-6 py-3">Purchased</th>
+                                    <th className="px-6 py-3">Price</th>
+                                    <th className="px-6 py-3">Matches</th>
+                                    <th className="px-6 py-3">Status</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-orange-50">
+                                {filteredBoards.map((board) => {
+                                    const game = gameLookup.get(board.gameId);
+                                    const gameLabel = game
+                                        ? new Date(game.expirationDate).toLocaleDateString()
+                                        : board.gameId;
+
+                                    return (
+                                        <tr key={board.boardId} className="transition hover:bg-[#fff8f0]">
+                                            <td className="px-6 py-4 font-semibold text-slate-800">{board.boardId}</td>
+                                            <td className="px-6 py-4 text-slate-600">{gameLabel}</td>
+                                            <td className="px-6 py-4 text-slate-600">{formatDateTime(board.timestamp)}</td>
+                                            <td className="px-6 py-4 text-slate-800">{board.price} kr</td>
+                                            <td className="px-6 py-4 text-slate-600">
+                                                {board.winningNumbers?.length ? `${board.matched}/${board.winningNumbers.length}` : "—"}
+                                            </td>
+                                            <td className="px-6 py-4"><StatusBadge status={board.status}/></td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {celebratedBoard && (
+                    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
+                        <div className="max-w-lg space-y-4 rounded-3xl bg-white p-6 shadow-2xl shadow-orange-200">
+                            <h3 className="text-2xl font-semibold text-slate-900">🎉 You won!</h3>
+                            <p className="text-slate-600">Board {celebratedBoard.boardId} matched all winning
+                                numbers.</p>
+                            <div className="rounded-2xl bg-orange-50 p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-500">Winning numbers</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {celebratedBoard.winningNumbers.map((number) => (
+                                        <span key={`win-${celebratedBoard.boardId}-${number}`}
+                                              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200">
                                         {number}
                                     </span>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                className="w-full rounded-full bg-[#f7a166] px-4 py-2 text-center text-sm font-semibold text-white shadow-lg shadow-orange-200"
+                                onClick={() => setCelebratedBoard(null)}
+                            >
+                                Close
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            className="w-full rounded-full bg-[#f7a166] px-4 py-2 text-center text-sm font-semibold text-white shadow-lg shadow-orange-200"
-                            onClick={() => setCelebratedBoard(null)}
-                        >
-                            Close
-                        </button>
                     </div>
-                </div>
-            )}
-        </section>
-    );
+                )}
+            </section>
+        );
 }

@@ -219,6 +219,7 @@ export default function AdminWinningNumbersPage() {
                         {sortedGames.map((game) => {
                             const numbersPublished = (game.winningNumbers?.length ?? 0) >= 3;
                             const isSelected = game.gameId === activeGame?.gameId;
+                            const publishedAt = numbersPublished ? formatDate(game.drawDate ?? undefined) : null;
 
                             return (
                                 <button
@@ -231,22 +232,22 @@ export default function AdminWinningNumbersPage() {
                                 >
                                     <div className="flex items-center justify-between text-sm text-slate-600">
                                         <span>{new Date(game.expirationDate).toLocaleDateString()}</span>
-                                        <span
-                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${numbersPublished ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${numbersPublished ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                                             {numbersPublished ? "Published" : "Awaiting numbers"}
                                         </span>
                                     </div>
                                     <p className="text-xs text-slate-500">Game ID: {game.gameId}</p>
                                     {numbersPublished && (
-                                        <p className="text-sm font-medium text-slate-700">Winning
-                                            numbers: {game.winningNumbers?.join(", ")}</p>
+                                        <p className="text-sm font-medium text-slate-700">Winning numbers: {game.winningNumbers?.join(", ")}</p>
+                                    )}
+                                    {publishedAt && (
+                                        <p className="text-[11px] text-slate-500">Published: {publishedAt}</p>
                                     )}
                                 </button>
                             );
                         })}
                         {sortedGames.length === 0 && (
-                            <p className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-3 text-sm text-slate-600">Create
-                                a game to publish numbers.</p>
+                            <p className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-3 text-sm text-slate-600">Create a game to publish numbers.</p>
                         )}
                     </div>
 
@@ -263,7 +264,7 @@ export default function AdminWinningNumbersPage() {
                                     ? "bg-emerald-500 text-white shadow-xl shadow-emerald-200"
                                     : "bg-slate-200 text-slate-500"
                             }`}
-                            >
+                        >
                             {saving ? "Saving…" : "Publish Winning Numbers"}
                         </button>
                     </div>
@@ -281,7 +282,8 @@ export default function AdminWinningNumbersPage() {
                             label: "Payout per winner",
                             value: overview ? `${overview.payoutPerWinner.toFixed(2)} kr` : "—"
                         }].map((stat) => (
-                            <article key={stat.label} className="rounded-3xl bg-white/80 p-4 text-center shadow-lg shadow-orange-100">
+                            <article key={stat.label}
+                                     className="rounded-3xl bg-white/80 p-4 text-center shadow-lg shadow-orange-100">
                                 <p className="text-xs uppercase tracking-wide text-slate-400">{stat.label}</p>
                                 <p className="mt-2 text-xl font-semibold text-slate-900">{stat.value}</p>
                             </article>
@@ -293,12 +295,14 @@ export default function AdminWinningNumbersPage() {
                             <div>
                                 <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Winning players</p>
                                 <h3 className="text-xl font-semibold text-slate-900">Results</h3>
-                                <p className="text-sm text-slate-500">Data comes directly from backend payout overview.</p>
+                                <p className="text-sm text-slate-500">Data comes directly from backend payout
+                                    overview.</p>
                             </div>
                         </div>
 
                         {!overview && (
-                            <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">Select a game to see winners.</p>
+                            <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">Select a game to
+                                see winners.</p>
                         )}
 
                         {overview && winners.length === 0 && (

@@ -1,5 +1,7 @@
 import {baseUrl} from "@core/baseUrl.ts";
 import {customFetch} from "@utilities/customFetch.ts";
+import {asArray, asNumberArray} from "@utilities/arrayNormalize.ts";
+
 
 export type BoardDto = {
     boardId: string;
@@ -31,31 +33,6 @@ const jsonHeaders = {
     "Content-Type": "application/json"
 };
 
-function normalizeArray<T>(data: unknown): T[] {
-    if (Array.isArray(data)) return data as T[];
-    if (data && typeof data === "object" && Array.isArray((data as any).$values)) {
-        return (data as any).$values as T[];
-    }
-    return [];
-}
-
-export function normalizeNumbers(raw: unknown): number[] {
-    if (Array.isArray(raw)) return raw.map(Number);
-    if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
-        return (raw as any).$values.map(Number);
-    }
-    if (typeof raw === "string") {
-        try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed.map(Number);
-        } catch {}
-        return raw
-            .split(/[\s,]+/)
-            .map((value) => Number(value))
-            .filter(Number.isFinite);
-    }
-    return [];
-}
 
 export const boardsApi = {
     async list(): Promise<BoardDto[]> {
@@ -65,12 +42,12 @@ export const boardsApi = {
         });
 
         if (!response.ok) throw new Error("Failed to fetch boards");
-
         const data: unknown = await response.json();
-        return normalizeArray<BoardDto>(data).map((board) => ({
+        return asArray<BoardDto>(data).map((board) => ({
             ...board,
-            chosenNumbers: normalizeNumbers((board as any).chosenNumbers)
+            chosenNumbers: asNumberArray(board.chosenNumbers)
         }));
+
         },
 
     async purchase(playerId: string, payload: PurchaseBoardRequest): Promise<BoardDto> {
@@ -102,6 +79,5 @@ export const winningBoardsApi = {
         if (!response.ok) throw new Error("Failed to fetch winning boards");
 
         const data: unknown = await response.json();
-        return normalizeArray<WinningBoardDto>(data);
-    }
+        return asArray<WinningBoardDto>(data);    }
 };
