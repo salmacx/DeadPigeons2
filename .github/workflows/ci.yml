@@ -55,29 +55,25 @@ jobs:
         run: dotnet build DeadPigeon.sln --configuration Release --no-restore
 
       - name: Test backend
+        id: test
+        continue-on-error: true
         working-directory: server/tests
-        env:
-          DOTNET_NOLOGO: true
         run: |
           dotnet test ../../DeadPigeon.sln \
             --configuration Release \
             --no-build \
-            --logger "console;verbosity=detailed" \
-            --results-directory TestResults
+            --logger "console;verbosity=detailed"
 
-      - name: Print test logs if failed
-        if: failure()
-        working-directory: server/tests
+      - name: Print test logs
+        if: always()
         run: |
-          echo "==== server/tests/TestResults ===="
-          ls -R TestResults || true
+          echo "==== TestResults dir ===="
+          ls -R server/tests/bin/Release/net9.0/TestResults || true
+          
+          echo "==== tests_net9.0_x64.log (first 200 lines) ===="
+          sed -n '1,200p' server/tests/bin/Release/net9.0/TestResults/tests_net9.0_x64.log || true
 
-          echo "==== .log files ===="
-          find TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
+      - name: Fail if tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
 
-          echo "==== .trx files ===="
-          find TestResults -type f -name "*.trx" -print -exec sed -n '1,200p' {} \; || true
-
-          echo "==== ALSO check default bin TestResults (dotnet sometimes writes here) ===="
-          ls -R bin/Release/net9.0/TestResults || true
-          find bin/Release/net9.0/TestResults -type f -name "*.log" -print -exec sed -n '1,200p' {} \; || true
