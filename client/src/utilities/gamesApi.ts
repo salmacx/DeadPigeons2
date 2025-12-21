@@ -1,6 +1,6 @@
 import {baseUrl} from "@core/baseUrl.ts";
 import {customFetch} from "@utilities/customFetch.ts";
-import {asArray, asNumberArray} from "@utilities/arrayNormalize.ts";
+import {asArray, asNumberArray} from "@utilities/jsonNormalize";
 
 export type GameDto = {
     gameId: string;
@@ -16,22 +16,26 @@ const jsonHeaders = {
 
 
 export const gamesApi = {
-    async getAll(): Promise<GameDto[]> {
-        const response = await customFetch.fetch(`${baseUrl}/api/Game`, {
-            method: "GET",
-            headers: jsonHeaders
-        });
+        async getAll(): Promise<GameDto[]> {
+            const response = await customFetch.fetch(`${baseUrl}/api/Game`, {
+                method: "GET",
+                headers: jsonHeaders
+            });
 
-        if (!response.ok) throw new Error("Failed to fetch games");
+            if (!response.ok) throw new Error("Failed to fetch games");
 
-        const data: unknown = await response.json();
+            const raw = await response.json();
 
-        return asArray<GameDto>(data).map((game) => ({
-            ...game,
-            winningNumbers: asNumberArray(game.winningNumbers)
-        }));
+            const games = asArray<GameDto>(raw).map((g) => ({
+                gameId: g.gameId,
+                expirationDate: g.expirationDate,
+                drawDate: g.drawDate ?? null,
+                winningNumbers: asNumberArray(g.winningNumbers)
+            }));
 
-},
+            return games.filter(g => g.gameId && g.gameId !== "00000000-0000-0000-0000-000000000000");
+
+    },
 
     async create(expirationDate: string): Promise<GameDto> {
         const response = await customFetch.fetch(`${baseUrl}/api/Game`, {

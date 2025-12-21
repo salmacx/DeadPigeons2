@@ -75,20 +75,23 @@ export default function Auth() {
             const bodyText = response?.data ? await response.data.text() : null;
             const body = bodyText ? JSON.parse(bodyText) : null;
 
-            if (role === "player" && body?.playerId) {
-                localStorage.setItem("playerId", body.playerId);
-            } else if (role === "player") {
-                // if backend still not returning it, at least don’t leave stale values
+            // --- playerId storage (single source of truth) ---
+            if (role === "player") {
+                const bodyText = response?.data ? await response.data.text() : null;
+                const body = bodyText ? JSON.parse(bodyText) : null;
+
+                const bodyPlayerId = body?.playerId ?? body?.PlayerId;
+
+                if (bodyPlayerId) {
+                    localStorage.setItem("playerId", String(bodyPlayerId).trim());
+                } else {
+                    // if backend doesn't send playerId, DO NOT guess from JWT (it caused your mismatch)
+                    localStorage.removeItem("playerId");
+                }
+            } else {
+                // admin login should not keep a player id around
                 localStorage.removeItem("playerId");
             }
-
-            const rawToken = formattedToken.replace(/^Bearer\s+/i, "");
-            const payload = JSON.parse(atob(rawToken.split(".")[1]));
-
-            const playerId =
-                payload.sub || payload.id || payload.nameid || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-
-            if (playerId) localStorage.setItem("playerId", String(playerId));
 
             setCurrentUser({
                 name: credentials.email,
@@ -120,15 +123,13 @@ export default function Auth() {
 
         <div
             className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fef3ec] via-[#fffaf6] to-[#f3f4ff] px-4 py-12 text-slate-800">
-            <div className="w-full max-w-xl space-y-6 rounded-3xl bg-white/90 p-10 shadow-2xl shadow-orange-100">
+            <div className="w-full max-w-xl space-y-8 rounded-3xl bg-white/90 p-12 shadow-2xl shadow-orange-100">
                 <div className="flex flex-col gap-2 text-center">
                     <span
                         className="mx-auto inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#f1812c]">
                         Dead Pigeons
                     </span>
-                    <h1 className="text-3xl font-semibold text-slate-700">Sign in to your dashboard</h1>
-                    <p className="text-sm text-slate-500">Use the role toggle to switch between Player and Admin
-                        login.</p>
+                    <h1 className="text-3xl font-semibold text-slate-700">Sign in</h1>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#fefbf7] p-2">

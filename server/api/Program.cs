@@ -23,10 +23,9 @@ public class Program
     {
         services.AddSingleton(TimeProvider.System);
         services.InjectAppOptions();
-        services.AddMyDbContext(configuration);
         services.AddControllers().AddJsonOptions(opts =>
         {
-            opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             opts.JsonSerializerOptions.MaxDepth = 128;
         });
         
@@ -73,17 +72,28 @@ public class Program
 
     public static void Main(string[]? args = null)
     {
-        DotNetEnv.Env.Load();
+if (builder.Environment.IsDevelopment())
+{
+    DotNetEnv.Env.Load();
+}
+       var builder = WebApplication.CreateBuilder(args);
 
-        var builder = WebApplication.CreateBuilder(args);
-        
-        //var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+       // Fly secrets -> ASP.NET config automatically.
+       // We'll accept either ConnectionStrings_DefaultConnection OR ConnectionStrings_AppDb OR DATABASE_URL
+       var conn =
+           builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? builder.Configuration.GetConnectionString("AppDb")
+           ?? builder.Configuration["DATABASE_URL"];
 
-            //builder.Services.AddDbContext<MyDbContext>(options =>
-            //{
-              //  options.UseNpgsql(connectionString);
-           // });
-            
+       if (string.IsNullOrWhiteSpace(conn))
+       {
+           throw new InvalidOperationException(
+               "No database connection string found. Set ConnectionStrings__DefaultConnection (recommended) or DATABASE_URL.");
+       }
+
+       builder.Services.AddDbContext<MyDbContext>(opt => opt.UseNpgsql(conn));
+
+
         ConfigureServices(builder.Services, builder.Configuration);
         var app = builder.Build();
         app.UseExceptionHandler(config => { });

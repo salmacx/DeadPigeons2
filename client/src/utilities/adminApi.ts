@@ -1,6 +1,6 @@
 import {baseUrl} from "@core/baseUrl.ts";
 import {customFetch} from "@utilities/customFetch.ts";
-import {asArray} from "@utilities/arrayNormalize.ts";
+import {asArray} from "@utilities/jsonNormalize.ts";
 
 export type AdminWinnerLine = {
     winningboardId: string;

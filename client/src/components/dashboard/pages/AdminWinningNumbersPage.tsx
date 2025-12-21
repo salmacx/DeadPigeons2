@@ -5,6 +5,7 @@ import NumberGrid from "../NumberGrid";
 import {adminSelectionAtom} from "../state/gameAtoms";
 import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
 import {adminApi, type AdminPayoutOverview} from "@utilities/adminApi.ts";
+import {winningBoardsApi} from "@utilities/boardsApi.ts";
 
 function formatDate(value?: string) {
     if (!value) return "—";
@@ -91,8 +92,11 @@ export default function AdminWinningNumbersPage() {
         if (!activeGame) return;
         setSaving(true);
 
+
         try {
             await adminApi.publishWinningNumbers(activeGame.gameId, selectedNumbers);
+            await winningBoardsApi.compute(activeGame.gameId);
+
             toast.success("Winning numbers saved for this game.");
             setSelectedNumbers([]);
 

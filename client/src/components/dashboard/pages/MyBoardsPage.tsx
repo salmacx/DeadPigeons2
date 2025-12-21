@@ -6,6 +6,7 @@ import {playerSelectionAtom} from "../state/gameAtoms";
 import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
 import {boardsApi, type BoardDto,  winningBoardsApi, type WinningBoardDto} from "@utilities/boardsApi.ts";
 import {transactionsApi} from "@utilities/transactionsApi.ts";
+import { normalizeNumbers } from "@utilities/jsonNormalize";
 
 
 const pricing: Record<number, number> = {
@@ -44,31 +45,10 @@ type BoardWithMeta = BoardDto & {
     drawDate?: string | null;
 };
 
-function normalizeNumbers(raw?: unknown): number[] {
-    if (Array.isArray(raw)) return raw.map(Number);
-    if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
-        return (raw as any).$values.map(Number);
-    }
-    if (typeof raw === "string") {
-        try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed.map(Number);
-        } catch {}
-        return raw
-            .split(/[\s,]+/)
-            .map((value) => Number(value))
-            .filter(Number.isFinite);
-    }
-    return [];
+function normGuid(value: unknown): string {
+    return String(value ?? "").trim().toLowerCase();
 }
 
-function normalizeList<T>(raw: unknown): T[] {
-    if (Array.isArray(raw)) return raw as T[];
-    if (raw && typeof raw === "object" && Array.isArray((raw as any).$values)) {
-        return (raw as any).$values as T[];
-    }
-    return [];
-}
 
 export default function MyBoardsPage() {
 
@@ -111,6 +91,7 @@ export default function MyBoardsPage() {
 
     const refreshPlayerData = async (id: string) => {
         const trimmedId = id.trim();
+        const playerKey = normGuid(trimmedId);
         if (!trimmedId) return;
 
         setLoading(true);
@@ -123,15 +104,13 @@ export default function MyBoardsPage() {
                     gamesApi.getAll(),
                 ]);
 
-            const allBoards = normalizeList<BoardDto>(boardResponse);
-            const allWinning = normalizeList<WinningBoardDto>(winningResponse);
-            const allGames = normalizeList<GameDto>(gamesResponse);
+            const allBoards = boardResponse;
+            const allWinning = winningResponse;
+            const allGames = gamesResponse;
 
             setBalance(balanceResponse.balance);
 
-            const playerBoards = allBoards.filter(
-                (b) => String(b.playerId).trim() === trimmedId
-            );
+            const playerBoards = allBoards.filter((b) => normGuid(b.playerId) === playerKey);
 
             setBoards(playerBoards);
             setWinningBoards(allWinning);
@@ -145,6 +124,7 @@ export default function MyBoardsPage() {
         } finally {
             setLoading(false);
         }
+
     };
 
     useEffect(() => {
@@ -457,7 +437,7 @@ export default function MyBoardsPage() {
                                             </div>
                                             <div className="space-y-1 text-right">
                                                 <p className="text-xs uppercase tracking-wide text-slate-500">Price</p>
-                                                <p className="text-2xl font-semibold text-slate-900">{board.price} kr</p>
+                                                <td className="px-6 py-5 text-right tabular-nums text-slate-800">{board.price} kr</td>
                                                 <StatusBadge status={board.status}/>
                                             </div>
                                         </div>
@@ -491,20 +471,20 @@ export default function MyBoardsPage() {
                     )}
 
                     {viewMode === "table" && filteredBoards.length > 0 && (
-                        <div className="overflow-x-auto rounded-3xl bg-white/90 p-4 shadow-lg shadow-orange-100">
+                        <div className="overflow-x-auto rounded-3xl bg-white/90 p-6 shadow-lg shadow-orange-100">
                             <table
-                                className="min-w-[1120px] w-full table-auto divide-y divide-orange-100 text-left text-sm">
-                                <thead className="bg-[#fef7ef] text-xs uppercase tracking-wide text-slate-500">
+                                className="min-w-[1120px] w-full table-auto divide-y divide-orange-100 text-left text-[15px]">
+                                <thead className="bg-[#fef7ef] text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                 <tr>
-                                    <th className="px-6 py-3">Board</th>
-                                    <th className="px-6 py-3">Game</th>
-                                    <th className="px-6 py-3">Purchased</th>
-                                    <th className="px-6 py-3">Price</th>
-                                    <th className="px-6 py-3">Matches</th>
-                                    <th className="px-6 py-3">Status</th>
+                                    <th className="px-6 py-4">Board</th>
+                                    <th className="px-6 py-4">Game</th>
+                                    <th className="px-6 py-4">Purchased</th>
+                                    <th className="px-6 py-4">Price</th>
+                                    <th className="px-6 py-4">Matches</th>
+                                    <th className="px-6 py-4">Status</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-orange-50">
+                                <tbody className="divide-y divide-orange-50 align middle">
                                 {filteredBoards.map((board) => {
                                     const game = gameLookup.get(board.gameId);
                                     const gameLabel = game
@@ -513,11 +493,14 @@ export default function MyBoardsPage() {
 
                                     return (
                                         <tr key={board.boardId} className="transition hover:bg-[#fff8f0]">
-                                            <td className="px-6 py-4 font-semibold text-slate-800">{board.boardId}</td>
-                                            <td className="px-6 py-4 text-slate-600">{gameLabel}</td>
-                                            <td className="px-6 py-4 text-slate-600">{formatDateTime(board.timestamp)}</td>
-                                            <td className="px-6 py-4 text-slate-800">{board.price} kr</td>
-                                            <td className="px-6 py-4 text-slate-600">
+                                            <td className="px-6 py-5 font-semibold text-slate-800">
+                                                <span className="block max-w-[260px] truncate">{board.boardId}</span>
+                                            </td>
+                                            <td className="px-6 py-5 text-slate-600">
+                                                <span className="block max-w-[180px] truncate">{gameLabel}</span>
+                                            </td>                                            <td className="px-6 py-5 text-slate-600">{formatDateTime(board.timestamp)}</td>
+                                            <td className="px-6 py-5 text-slate-800">{board.price} kr</td>
+                                            <td className="px-6 py-5 text-slate-600">
                                                 {board.winningNumbers?.length ? `${board.matched}/${board.winningNumbers.length}` : "—"}
                                             </td>
                                             <td className="px-6 py-4"><StatusBadge status={board.status}/></td>

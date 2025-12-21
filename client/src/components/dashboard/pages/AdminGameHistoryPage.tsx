@@ -47,16 +47,16 @@ export default function AdminGameHistoryPage() {
                     (a, b) => new Date(b.expirationDate).getTime() - new Date(a.expirationDate).getTime()
                 );
 
-                const completed = sorted.find((g) => (g.winningNumbers?.length ?? 0) >= 3);
-                const fallback = completed ?? sorted[0];
+                const latest = sorted[0] ?? null;
 
-                if (fallback?.gameId) {
-                    setSelectedGameId(fallback.gameId);
-                    await loadOverview(fallback.gameId);
+                if (latest?.gameId) {
+                    setSelectedGameId(latest.gameId);
+                    await loadOverview(latest.gameId);
                 } else {
                     setSelectedGameId("");
                     setOverview(null);
                 }
+
             } catch (error) {
                 console.error(error);
                 toast.error("Could not load games.");
@@ -97,9 +97,14 @@ export default function AdminGameHistoryPage() {
         if (!selectedGame) return "No game selected";
         const hasNumbers = (selectedGame.winningNumbers?.length ?? 0) >= 3;
         const isExpired = new Date(selectedGame.expirationDate) < new Date();
+        console.log("expirationDate raw:", selectedGame?.expirationDate);
+        console.log("expirationDate parsed:", new Date(selectedGame?.expirationDate ?? "").toString());
+        console.log("now:", new Date().toString());
+
         if (!hasNumbers) return "Waiting for winning numbers";
         return isExpired ? "Game completed" : "Results published";
     }, [selectedGame]);
+
 
     const stats = useMemo(
         () => [
