@@ -23,12 +23,13 @@ public class Program
     {
         services.AddSingleton(TimeProvider.System);
         services.InjectAppOptions();
+        services.AddMyDbContext(configuration);
         services.AddControllers().AddJsonOptions(opts =>
         {
 opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             opts.JsonSerializerOptions.MaxDepth = 128;
         });
-        
+
         services.AddOpenApiDocument(config =>
         {
             config.PostProcess = document =>
@@ -38,7 +39,7 @@ opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
                 document.Info.Description = "API for the Dead Pigeons bingo project.";
             };
            // config.AddStringConstants(typeof(SieveConstants));
-           
+
            config.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme
            {
                Type = OpenApiSecuritySchemeType.ApiKey,
@@ -72,27 +73,10 @@ opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 
     public static void Main(string[]? args = null)
     {
-if (builder.Environment.IsDevelopment())
-{
+
     DotNetEnv.Env.Load();
-}
-       var builder = WebApplication.CreateBuilder(args);
 
-       // Fly secrets -> ASP.NET config automatically.
-       // We'll accept either ConnectionStrings_DefaultConnection OR ConnectionStrings_AppDb OR DATABASE_URL
-       var conn =
-           builder.Configuration.GetConnectionString("DefaultConnection")
-           ?? builder.Configuration.GetConnectionString("AppDb")
-           ?? builder.Configuration["DATABASE_URL"];
-
-       if (string.IsNullOrWhiteSpace(conn))
-       {
-           throw new InvalidOperationException(
-               "No database connection string found. Set ConnectionStrings__DefaultConnection (recommended) or DATABASE_URL.");
-       }
-
-       builder.Services.AddDbContext<MyDbContext>(opt => opt.UseNpgsql(conn));
-
+       var builder = WebApplication.CreateBuilder(args ?? Array.Empty<string>());
 
         ConfigureServices(builder.Services, builder.Configuration);
         var app = builder.Build();

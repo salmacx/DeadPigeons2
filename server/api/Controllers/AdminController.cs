@@ -236,23 +236,29 @@ public async Task<ActionResult<AdminPayoutOverviewResponseDto>> GetPayoutOvervie
     var gameExists = await _dbContext.Games.AnyAsync(g => g.GameId == gameId);
     if (!gameExists) return NotFound("Game not found");
 
+
     // 2) Pool = sum of board prices for this game
-    var totalPrizePool = await _dbContext.Boards
-        .Where(b => b.GameId == gameId)
-        .SumAsync(b => (decimal?)b.Price) ?? 0m;
+    var boardsQuery = _dbContext.Boards.Where(b =>
+        b.GameId == gameId || b.RepeatUntilGameId == gameId
+    );
+
+  var totalPrizePool = await boardsQuery
+      .SumAsync(b => (decimal?)b.Price) ?? 0m;
 
     // 3) Total players = distinct players who bought boards in this game
-    var totalPlayers = await _dbContext.Boards
-        .Where(b => b.GameId == gameId)
+    var totalPlayers = await boardsQuery
         .Select(b => b.PlayerId)
         .Distinct()
         .CountAsync();
 
     // 4) Winners (distinct by BoardId)
     var winnersRaw = await _dbContext.Winningboards
-        .Where(w => w.GameId == gameId)
         .Include(w => w.Board)
             .ThenInclude(b => b.Player)
+        .Where(w =>
+            w.Board != null &&
+            (w.Board.GameId == gameId || w.Board.RepeatUntilGameId == gameId)
+        )
         .ToListAsync();
 
     var winnersDistinct = winnersRaw

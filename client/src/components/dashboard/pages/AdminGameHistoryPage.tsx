@@ -117,6 +117,13 @@ export default function AdminGameHistoryPage() {
         [overview]
     );
 
+    const winners = useMemo(() => {
+        const raw: any = (overview as any)?.winners;
+        if (Array.isArray(raw)) return raw;
+        if (raw && Array.isArray(raw.$values)) return raw.$values;
+        return [];
+    }, [overview]);
+
     return (
         <section className="space-y-6">
             {/* Header */}
@@ -200,11 +207,11 @@ export default function AdminGameHistoryPage() {
                     </p>
                 )}
 
-                {!loadingOverview && overview && overview.winners.length === 0 && (
+                {!loadingOverview && overview && winners.length === 0 && (
                     <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">No winners this round.</p>
                 )}
 
-                {!loadingOverview && overview && overview.winners.length > 0 && (
+                {!loadingOverview && overview && winners.length > 0 && (
                     <div className="overflow-x-auto rounded-2xl bg-white/90 p-2 shadow-inner">
                         <table className="min-w-full divide-y divide-orange-100 text-left text-sm">
                             <thead className="bg-[#fef7ef] text-xs uppercase tracking-wide text-slate-500">
@@ -216,7 +223,7 @@ export default function AdminGameHistoryPage() {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-orange-50">
-                            {overview.winners.map((winner) => {
+                            {winners.map((winner) => {
                                 const player = playerLookup.get(winner.playerId);
                                 const name = winner.playerName?.trim() || player?.fullName || winner.playerId;
                                 const email = player?.email ?? "—";
