@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import NumberGrid from "../NumberGrid";
 import {playerSelectionAtom} from "../state/gameAtoms";
 import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
-import {boardsApi, type BoardDto,  winningBoardsApi, type WinningBoardDto} from "@utilities/boardsApi.ts";
+import { boardsApi, winningBoardsApi, type BoardDto, type WinningBoardDto } from "@utilities/boardsApi";
 import {transactionsApi} from "@utilities/transactionsApi.ts";
 import { normalizeNumbers } from "@utilities/jsonNormalize";
 
@@ -100,7 +100,7 @@ export default function MyBoardsPage() {
                 await Promise.all([
                     transactionsApi.getBalance(trimmedId),
                     boardsApi.list(),
-                    winningBoardsApi.list(),
+                    winningBoardsApi.getAll(),
                     gamesApi.getAll(),
                 ]);
 

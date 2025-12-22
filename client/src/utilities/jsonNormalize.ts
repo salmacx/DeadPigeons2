@@ -6,6 +6,14 @@ export function asArray<T>(value: any): T[] {
     return [];
 }
 
+// Simplified array normalizer (array or {$values: []})
+export function normalizeArray<T>(value: any): T[] {
+    if (Array.isArray(value)) return value as T[];
+    if (value && Array.isArray((value as any).$values)) return (value as any).$values as T[];
+    return [];
+}
+
+
 export function asNumberArray(value: any): number[] {
     return asArray<any>(value)
         .map((entry) => (typeof entry === "string" ? Number(entry) : entry))

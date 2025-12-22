@@ -60,7 +60,7 @@ export default function PlayerHistoryPage() {
         try {
             const [boardsResponse, winningResponse, gamesResponse] = await Promise.all([
                 boardsApi.list(),
-                winningBoardsApi.list(),
+                winningBoardsApi.getAll(),
                 gamesApi.getAll()
             ]);
 
