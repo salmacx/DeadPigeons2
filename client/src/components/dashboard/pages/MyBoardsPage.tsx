@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import NumberGrid from "../NumberGrid";
 import {playerSelectionAtom} from "../state/gameAtoms";
 import {gamesApi, type GameDto} from "@utilities/gamesApi.ts";
-import { boardsApi, winningBoardsApi, type BoardDto, type WinningBoardDto } from "@utilities/boardsApi";
+import {boardsApi, type BoardDto,  winningBoardsApi, type WinningBoardDto} from "@utilities/boardsApi.ts";
 import {transactionsApi} from "@utilities/transactionsApi.ts";
 import { normalizeNumbers } from "@utilities/jsonNormalize";
 
@@ -23,7 +23,11 @@ function getPrice(count: number) {
 function pickActiveGame(games: GameDto[]): GameDto | null {
     const today = new Date();
     const upcoming = [...games]
-        .filter((game) => new Date(game.expirationDate) >= today)
+        .filter(
+            (game) =>
+                new Date(game.expirationDate) >= today &&
+                (game.winningNumbers?.length ?? 0) === 0
+        )
         .sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
 
     if (upcoming.length > 0) return upcoming[0];
@@ -163,7 +167,9 @@ export default function MyBoardsPage() {
             const matched = hasResults
                 ? board.chosenNumbers.filter((num) => winningNumbers.includes(num)).length
                 : 0;
-            const isWinner = winningBoardIds.has(board.boardId) || (hasResults && matched === winningNumbers.length && winningNumbers.length > 0);
+
+// ✅ ONLY backend decides winners
+            const isWinner = winningBoardIds.has(board.boardId);
             const status: BoardStatus = !hasResults
                 ? "Active"
                 : isWinner

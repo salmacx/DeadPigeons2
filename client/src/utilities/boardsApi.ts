@@ -22,6 +22,7 @@ export type WinningBoardDto = {
     winningboardId: string;
     boardId: string;
     gameId: string;
+    playerId?: string;
     winningNumbersMatched: number;
     timestamp: string;
 };
@@ -69,28 +70,49 @@ export const boardsApi = {
 /* ---------- Winning boards ---------- */
 export const winningBoardsApi = {
     async getAll(): Promise<WinningBoardDto[]> {
-        const res = await customFetch.fetch(`${baseUrl}/winningboards`, {
-            method: "GET",
-            headers: { Accept: "application/json" },
-        });
+        const endpoints = [`${baseUrl}/api/WinningBoard`, `${baseUrl}/winningboards`];
 
-        if (!res.ok) throw new Error("Failed to fetch winning boards");
+        const mapResult = (raw: any): WinningBoardDto[] =>
+            normalizeArray<any>(raw).map((w) => ({
+                winningboardId: String(
+                    w.winningboardId ?? w.winningBoardId ?? w.WinningboardId ?? w.WinningBoardId ?? ""
+                ),
+                boardId: String(w.boardId ?? w.BoardId ?? ""),
+                gameId: String(w.gameId ?? w.GameId ?? w.gameID ?? w.GameID ?? ""),
+                winningNumbersMatched: Number(
+                    w.winningNumbersMatched ?? w.winningNumbers ?? w.WinningNumbersMatched ?? w.WinningNumbers ?? 0
+                ),
+                timestamp: String(w.timestamp ?? w.Timestamp ?? ""),
+            }));
 
-        const raw = await res.json();
-        return normalizeArray<any>(raw).map((w) => ({
-            winningboardId: String(w.winningboardId ?? w.WinningboardId ?? ""),
-            boardId: String(w.boardId ?? w.BoardId ?? ""),
-            gameId: String(w.gameId ?? w.GameId ?? ""),
-            winningNumbersMatched: Number(w.winningNumbersMatched ?? w.WinningNumbersMatched ?? 0),
-            timestamp: String(w.timestamp ?? w.Timestamp ?? ""),
-        }));
+        let lastError: unknown = null;
+
+        for (const url of endpoints) {
+            try {
+                const res = await customFetch.fetch(url, {
+                    method: "GET",
+                    headers: {Accept: "application/json"},
+                });
+
+                if (!res.ok) throw new Error(`Failed to fetch winning boards via ${url}`);
+
+                const raw = await res.json();
+                return mapResult(raw);
+            } catch (error) {
+                lastError = error;
+                console.warn("winningBoardsApi.getAll fallback", error);
+            }
+        }
+
+        throw lastError ?? new Error("Failed to fetch winning boards");
     },
+
 
     async compute(gameId: string): Promise<void> {
-        const res = await customFetch.fetch(
-            `${baseUrl}/api/WinningBoard/${gameId}/compute-winningboards`,
-            { method: "POST" }
-        );
-        if (!res.ok) throw new Error("Failed to compute winning boards");
-    },
+    const res = await customFetch.fetch(
+        `${baseUrl}/api/WinningBoard/${gameId}/compute-winningboards`,
+        { method: "POST" }
+    );
+    if (!res.ok) throw new Error("Failed to compute winning boards");
+},
 };

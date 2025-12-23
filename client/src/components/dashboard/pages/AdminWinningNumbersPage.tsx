@@ -4,9 +4,9 @@ import toast from "react-hot-toast";
 import NumberGrid from "../NumberGrid";
 import { adminSelectionAtom } from "../state/gameAtoms";
 import { gamesApi, type GameDto } from "@utilities/gamesApi";
-import { adminApi, type AdminPayoutOverview } from "@utilities/adminApi";
-import { winningBoardsApi, normalizeArray } from "@utilities/boardsApi";
-import type {UiWinnerLine} from "@utilities/adminWinnersFallback.ts";
+import {adminApi} from "@utilities/adminApi.ts";
+import { boardsApi, winningBoardsApi } from "@utilities/boardsApi";
+import {playersApi} from "@utilities/playersApi.ts";
 
 function formatDate(value?: string) {
     if (!value) return "—";
@@ -30,8 +30,19 @@ export default function AdminWinningNumbersPage() {
     const [selectedGameId, setSelectedGameId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [overview, setOverview] = useState<AdminPayoutOverview | null>(null);
-    const [expirationInput, setExpirationInput] = useState<string>("");
+    type UiOverview = {
+        gameId: string;
+        winnerCount: number;
+        totalPlayers: number;
+        totalPrizePool: number;
+        payoutPerWinner: number;
+        profit30Percent: number;
+        winnersPool70Percent: number;
+        remainder: number;
+        winners: any[];
+    };
+
+    const [overview, setOverview] = useState<UiOverview | null>(null);    const [expirationInput, setExpirationInput] = useState<string>("");
 
     const pickDefaultGameId = (list: GameDto[]) => {
         const openGame = list.find((game) => (game.winningNumbers?.length ?? 0) < 3);
@@ -53,46 +64,49 @@ export default function AdminWinningNumbersPage() {
 
     // ✅ shared loader with fallback (no admin dependency)
     const loadResults = async (gameId: string) => {
-        try {
-            const payout = await adminApi.getPayoutOverview(gameId);
-            setOverview(payout);
-            return;
-        } catch {
-            console.warn("payout-overview failed, using fallback winners");
-        }
+        const [boards, players, allGames] = await Promise.all([
+            boardsApi.list(),
+            playersApi.getAll(),
+            gamesApi.getAll(),
+        ]);
 
-        try {
-            const winningBoards = await winningBoardsApi.getAll();
-
-            const relevantWinners = winningBoards.filter(
-                (w) => w.gameId === gameId
-            );
-
-            const winners: UiWinnerLine[] = relevantWinners.map((w) => ({
-                winningboardId: w.winningboardId,
-                boardId: w.boardId,
-                playerId: "—",
-                playerName: "Unknown player",
-                winningNumbersMatched: w.winningNumbersMatched,
-                timestamp: w.timestamp,
-                payout: 0,
-            }));
-
-            setOverview({
-                gameId,
-                totalPlayers: 0,
-                totalPrizePool: 0,
-                winnerCount: winners.length,
-                payoutPerWinner: 0,
-                profit30Percent: 0,
-                winnersPool70Percent: 0,
-                remainder: 0,
-                winners,
-            });
-        } catch (e) {
-            console.error(e);
+        const game = allGames.find(g => g.gameId === gameId);
+        if (!game || !game.winningNumbers?.length) {
             setOverview(null);
+            return;
         }
+
+        const winningBoards = await winningBoardsApi.getAll();
+
+        const winners = winningBoards
+            .filter(w => w.gameId === gameId)
+            .map(w => {
+                const player = players.find(p => p.playerId === w.playerId);
+
+                return {
+                    winningboardId: w.winningboardId,
+                    boardId: w.boardId,
+                    playerId: w.playerId,
+                    playerName: player?.fullName ?? w.playerId,
+                    winningNumbersMatched: w.winningNumbersMatched,
+                    timestamp: w.timestamp,
+                    payout: 0,
+                };
+            });
+
+        setOverview({
+            gameId,
+            winnerCount: winners.length,
+            totalPlayers: new Set(
+                winningBoards.filter(w => w.gameId === gameId).map(w => w.playerId)
+            ).size,
+            totalPrizePool: 0,
+            payoutPerWinner: 0,
+            profit30Percent: 0,
+            winnersPool70Percent: 0,
+            remainder: 0,
+            winners,
+        });
     };
 
     useEffect(() => {
@@ -102,6 +116,7 @@ export default function AdminWinningNumbersPage() {
                 setGames(response);
 
                 const defaultId = pickDefaultGameId(response);
+                const defaultGame = response.find((g) => g.gameId === defaultId);
                 setSelectedGameId(defaultId);
                 if (defaultId) void loadResults(defaultId);
             } catch (error) {
@@ -117,8 +132,9 @@ export default function AdminWinningNumbersPage() {
 
     useEffect(() => {
         if (!selectedGameId) return;
+        const nextGame = games.find((g) => g.gameId === selectedGameId);
         void loadResults(selectedGameId);
-    }, [selectedGameId]);
+    }, [games, selectedGameId]);
 
     const toggleNumber = (value: number) => {
         setSelectedNumbers((prev) => (prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]));
@@ -174,7 +190,7 @@ export default function AdminWinningNumbersPage() {
         }
     };
 
-    const winners = useMemo(() => normalizeArray<any>((overview as any)?.winners), [overview]);
+    const winners = overview?.winners ?? [];
 
     const uniqueWinningPlayers = useMemo(() => {
         const ids = new Set(winners.map((w: any) => w.playerId));
