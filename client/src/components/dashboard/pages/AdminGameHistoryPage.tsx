@@ -186,7 +186,6 @@ export default function AdminGameHistoryPage() {
                 <div>
                     <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Winning players</p>
                     <h3 className="text-2xl font-semibold text-slate-900">Payout overview</h3>
-                    <p className="text-sm text-slate-500">If admin payouts fail, winners still load via fallback.</p>
                 </div>
 
                 {(!overview || !selectedGameId) && (

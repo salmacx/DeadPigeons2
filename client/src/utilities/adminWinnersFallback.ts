@@ -21,12 +21,10 @@ const normalizeId = (value?: string | null) => String(value ?? "").trim().toLowe
 
 export async function buildWinnersFallback(
     gameId: string,
-    options?: { players?: PlayerResponseDto[]; boards?: BoardDto[]; gameWinningNumbers?: number[] }
+    options?: { players?: PlayerResponseDto[]; boards?: BoardDto[] }
 ): Promise<UiWinnerLine[]> {
     const targetId = normalizeId(gameId);
 
-    const countMatches = (chosen: number[], winning: number[]) =>
-        chosen.filter((n) => winning.includes(n)).length;
 
     // 1) winningboards (boardId + matched + timestamp)
     let winningBoards: any[] = [];
@@ -34,7 +32,7 @@ export async function buildWinnersFallback(
         const winningBoardsRaw = await winningBoardsApi.getAll();
         winningBoards = normalizeArray<any>(winningBoardsRaw).filter((w) => normalizeId(w.gameId) === targetId);
     } catch (error) {
-        console.warn("winningBoardsApi.getAll failed, falling back to board comparison", error);
+        console.warn("winningBoardsApi.getAll failed, no winners will be shown", error);
     }
 
     // 2) boards (boardId -> playerId, and filter to same gameId if needed)
@@ -90,27 +88,6 @@ export async function buildWinnersFallback(
         })
     );
 
-    if (mappedWinningBoards.length > 0) return mappedWinningBoards.filter((w) => w.playerId);
+    return mappedWinningBoards.filter((w) => w.playerId);
 
-    // 5) No winning board rows; derive winners the same way the player UI does
-    const winningNumbers = normalizeArray<number>(options?.gameWinningNumbers ?? []);
-    if (winningNumbers.length === 0) return [];
-
-    const boardsForGame = boards.filter((b) => normalizeId(b.gameId) === targetId);
-    const derived = boardsForGame
-        .map((board) => {
-            const matched = countMatches(normalizeArray<number>(board.chosenNumbers), winningNumbers);
-            if (matched === 0) return null;
-
-            return mapToUi({
-                winningboardId: `fallback-${board.boardId}`,
-                boardId: board.boardId,
-                playerId: board.playerId,
-                winningNumbersMatched: matched,
-                timestamp: board.timestamp,
-            });
-        })
-        .filter(Boolean) as UiWinnerLine[];
-
-    return derived.filter((w) => w.playerId);
 }

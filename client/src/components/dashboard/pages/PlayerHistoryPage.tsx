@@ -100,11 +100,9 @@ export default function PlayerHistoryPage() {
             const game = gameLookup.get(board.gameId);
             const winningNumbers = game?.winningNumbers ?? [];
             const hasResults = (winningNumbers?.length ?? 0) >= 3;
-            const matched = hasResults
-                ? board.chosenNumbers.filter((num) => winningNumbers.includes(num)).length
-                : (winningBoardLookup.get(board.boardId)?.winningNumbersMatched ?? 0);
+            const matched = winningBoardLookup.get(board.boardId)?.winningNumbersMatched ?? 0;
 
-            const isWinner = winningBoardIds.has(board.boardId) || (hasResults && matched === winningNumbers.length && winningNumbers.length > 0);
+            const isWinner = winningBoardIds.has(board.boardId);
             const status: keyof typeof statusStyles = !hasResults
                 ? "Active"
                 : isWinner
@@ -174,7 +172,7 @@ export default function PlayerHistoryPage() {
                 </button>
             </div>
             <div className="rounded-3xl bg-white/80 p-6 shadow-lg shadow-orange-100">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                     <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                         Player ID
                         <input
@@ -197,19 +195,6 @@ export default function PlayerHistoryPage() {
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </select>
-                    </div>
-                    <div className="rounded-2xl bg-orange-50/60 p-4 shadow-inner">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">Status legend</p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                            {Object.entries(statusStyles).map(([label, classes]) => (
-                                <span key={label}
-                                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-semibold ${classes}`}>
-                                    {label}
-                                </span>
-                            ))}
-                        </div>
-                        <p className="mt-2 text-xs text-slate-500">Winning is based on published numbers or the winning
-                            boards list.</p>
                     </div>
                 </div>
             </div>

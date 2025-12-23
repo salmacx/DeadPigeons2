@@ -30,7 +30,8 @@ export type WinningBoardDto = {
 /* ---------- Boards API ---------- */
 export const boardsApi = {
     async list(): Promise<BoardDto[]> {
-        const res = await customFetch.fetch(`${baseUrl}/boards`, {
+        const res = await customFetch.fetch(`${baseUrl}/api/Board`, {
+
             method: "GET",
             headers: { Accept: "application/json" },
         });
@@ -57,14 +58,20 @@ export const boardsApi = {
             repeatUntilGameId: string | null;
         }
     ): Promise<void> {
-        const res = await customFetch.fetch(`${baseUrl}/boards/purchase`, {
+        const res = await customFetch.fetch(`${baseUrl}/api/Board/purchase`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId, ...payload }),
+            headers: {
+                "Content-Type": "application/json",
+                "X-Player-Id": playerId,
+            },
+            body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error("Failed to purchase board");
-    },
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Failed to purchase board");
+        }
+        },
 };
 
 /* ---------- Winning boards ---------- */
@@ -79,6 +86,15 @@ export const winningBoardsApi = {
                 ),
                 boardId: String(w.boardId ?? w.BoardId ?? ""),
                 gameId: String(w.gameId ?? w.GameId ?? w.gameID ?? w.GameID ?? ""),
+                playerId: String(
+                    w.playerId ??
+                    w.PlayerId ??
+                    w.board?.playerId ??
+                    w.Board?.PlayerId ??
+                    w.board?.player?.playerId ??
+                    w.Board?.Player?.PlayerId ??
+                    ""
+                ),
                 winningNumbersMatched: Number(
                     w.winningNumbersMatched ?? w.winningNumbers ?? w.WinningNumbersMatched ?? w.WinningNumbers ?? 0
                 ),

@@ -21,17 +21,37 @@ function getPrice(count: number) {
 }
 
 function pickActiveGame(games: GameDto[]): GameDto | null {
-    const today = new Date();
-    const upcoming = [...games]
-        .filter(
-            (game) =>
-                new Date(game.expirationDate) >= today &&
-                (game.winningNumbers?.length ?? 0) === 0
-        )
-        .sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
+    if (games.length === 0) return null;
 
-    if (upcoming.length > 0) return upcoming[0];
-    return games[0] ?? null;
+    const now = Date.now();
+    const oneDayAhead = now + 24 * 60 * 60 * 1000;
+
+    const normalized = games
+        .map((game) => ({
+            game,
+            exp: new Date(game.expirationDate).getTime(),
+        }))
+        .filter(({exp}) => !Number.isNaN(exp))
+        .sort((a, b) => a.exp - b.exp);
+
+    const soonestUpcoming = normalized.find(
+        ({exp, game}) =>
+            exp >= now &&
+            exp <= oneDayAhead &&
+            (game.winningNumbers?.length ?? 0) === 0
+    );
+
+    if (soonestUpcoming) return soonestUpcoming.game;
+
+    const nextFuture = normalized.find(
+        ({exp, game}) =>
+            exp >= now &&
+            (game.winningNumbers?.length ?? 0) === 0
+    );
+
+    if (nextFuture) return nextFuture.game;
+
+    return normalized.at(-1)?.game ?? games[0];
 }
 
 function formatDateTime(value?: string) {
@@ -116,8 +136,41 @@ export default function MyBoardsPage() {
 
             const playerBoards = allBoards.filter((b) => normGuid(b.playerId) === playerKey);
 
+// If the backend never computed winners for this game yet, trigger it so the DB gets updated
+            const staleGameIds = new Set<string>();
+            for (const board of playerBoards) {
+                const game = allGames.find((g) => normGuid(g.gameId) === normGuid(board.gameId));
+                const winningNumbers = normalizeNumbers(game?.winningNumbers);
+                const hasResults = (winningNumbers?.length ?? 0) >= 3;
+                const matches = hasResults
+                    ? board.chosenNumbers.filter((n) => winningNumbers?.includes(n)).length
+                    : 0;
+
+                const alreadyRecorded = allWinning.some(
+                    (w) => normGuid(w.boardId) === normGuid(board.boardId)
+                );
+
+                if (hasResults && matches === (winningNumbers?.length ?? 0) && !alreadyRecorded) {
+                    staleGameIds.add(board.gameId);
+                }
+            }
+
+            if (staleGameIds.size > 0) {
+                for (const gameId of staleGameIds) {
+                    try {
+                        await winningBoardsApi.compute(gameId);
+                    } catch (error) {
+                        console.error("Could not compute winning boards", error);
+                    }
+                }
+
+                const recomputed = await winningBoardsApi.getAll();
+                setWinningBoards(recomputed);
+            } else {
+                setWinningBoards(allWinning);
+            }
+
             setBoards(playerBoards);
-            setWinningBoards(allWinning);
             setGames(allGames);
             setCurrentGame(pickActiveGame(allGames));
             localStorage.setItem("playerId", trimmedId);
@@ -164,12 +217,15 @@ export default function MyBoardsPage() {
             const game = gameLookup.get(board.gameId);
             const winningNumbers = normalizeNumbers(game?.winningNumbers);
             const hasResults = (winningNumbers?.length ?? 0) >= 3;
-            const matched = hasResults
-                ? board.chosenNumbers.filter((num) => winningNumbers.includes(num)).length
+            const storedMatch = winningBoards.find((wb) => wb.boardId === board.boardId)?.winningNumbersMatched;
+            const computedMatch = hasResults
+                ? board.chosenNumbers.filter((num) => winningNumbers?.includes(num)).length
                 : 0;
+            const matched = storedMatch ?? computedMatch;
 
-// ✅ ONLY backend decides winners
-            const isWinner = winningBoardIds.has(board.boardId);
+//Prefer persisted winners, but avoid mislabeling a full match as losing while recomputing
+            const hasFullMatch = hasResults && computedMatch === (winningNumbers?.length ?? 0);
+            const isWinner = winningBoardIds.has(board.boardId) || hasFullMatch;
             const status: BoardStatus = !hasResults
                 ? "Active"
                 : isWinner
@@ -183,7 +239,7 @@ export default function MyBoardsPage() {
                 status
             };
         });
-    }, [boards, gameLookup, winningBoardIds]);
+    }, [boards, gameLookup, winningBoardIds, winningBoards]);
 
     useEffect(() => {
         const newlyWinning = boardsWithMeta.find((board) => {
@@ -269,7 +325,8 @@ export default function MyBoardsPage() {
             await refreshPlayerData(trimmedId);
         } catch (error) {
             console.error(error);
-            toast.error("Could not purchase board.");
+            const message = error instanceof Error ? error.message : "Could not purchase board.";
+            toast.error(message || "Could not purchase board.");
         } finally {
             setIsPurchasing(false);
         }

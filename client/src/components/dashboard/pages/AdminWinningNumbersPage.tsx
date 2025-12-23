@@ -5,8 +5,7 @@ import NumberGrid from "../NumberGrid";
 import { adminSelectionAtom } from "../state/gameAtoms";
 import { gamesApi, type GameDto } from "@utilities/gamesApi";
 import {adminApi} from "@utilities/adminApi.ts";
-import { boardsApi, winningBoardsApi } from "@utilities/boardsApi";
-import {playersApi} from "@utilities/playersApi.ts";
+
 
 function formatDate(value?: string) {
     if (!value) return "—";
@@ -16,10 +15,13 @@ function formatDate(value?: string) {
 
 function toDateTimeLocal(iso: string) {
     const date = new Date(iso);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(
-        2,
-        "0"
-    )}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 
@@ -42,7 +44,8 @@ export default function AdminWinningNumbersPage() {
         winners: any[];
     };
 
-    const [overview, setOverview] = useState<UiOverview | null>(null);    const [expirationInput, setExpirationInput] = useState<string>("");
+    const [overview, setOverview] = useState<UiOverview | null>(null);
+    const [expirationInput, setExpirationInput] = useState<string>("");
 
     const pickDefaultGameId = (list: GameDto[]) => {
         const openGame = list.find((game) => (game.winningNumbers?.length ?? 0) < 3);
@@ -62,53 +65,19 @@ export default function AdminWinningNumbersPage() {
     const canPublish =
         selectedNumbers.length === 3 && !!activeGame && (activeGame.winningNumbers?.length ?? 0) < 3;
 
-    // ✅ shared loader with fallback (no admin dependency)
+    // hared loader using backend payout overview
+    // shared loader using backend payout overview
     const loadResults = async (gameId: string) => {
-        const [boards, players, allGames] = await Promise.all([
-            boardsApi.list(),
-            playersApi.getAll(),
-            gamesApi.getAll(),
-        ]);
+        try {
+            const [overviewResponse] = await Promise.all([adminApi.getPayoutOverview(gameId)]);
 
-        const game = allGames.find(g => g.gameId === gameId);
-        if (!game || !game.winningNumbers?.length) {
+            setOverview(overviewResponse);
+        } catch (error) {
+            console.error(error);
             setOverview(null);
-            return;
+
         }
-
-        const winningBoards = await winningBoardsApi.getAll();
-
-        const winners = winningBoards
-            .filter(w => w.gameId === gameId)
-            .map(w => {
-                const player = players.find(p => p.playerId === w.playerId);
-
-                return {
-                    winningboardId: w.winningboardId,
-                    boardId: w.boardId,
-                    playerId: w.playerId,
-                    playerName: player?.fullName ?? w.playerId,
-                    winningNumbersMatched: w.winningNumbersMatched,
-                    timestamp: w.timestamp,
-                    payout: 0,
-                };
-            });
-
-        setOverview({
-            gameId,
-            winnerCount: winners.length,
-            totalPlayers: new Set(
-                winningBoards.filter(w => w.gameId === gameId).map(w => w.playerId)
-            ).size,
-            totalPrizePool: 0,
-            payoutPerWinner: 0,
-            profit30Percent: 0,
-            winnersPool70Percent: 0,
-            remainder: 0,
-            winners,
-        });
     };
-
     useEffect(() => {
         const loadGames = async () => {
             try {
@@ -116,7 +85,6 @@ export default function AdminWinningNumbersPage() {
                 setGames(response);
 
                 const defaultId = pickDefaultGameId(response);
-                const defaultGame = response.find((g) => g.gameId === defaultId);
                 setSelectedGameId(defaultId);
                 if (defaultId) void loadResults(defaultId);
             } catch (error) {
@@ -132,7 +100,6 @@ export default function AdminWinningNumbersPage() {
 
     useEffect(() => {
         if (!selectedGameId) return;
-        const nextGame = games.find((g) => g.gameId === selectedGameId);
         void loadResults(selectedGameId);
     }, [games, selectedGameId]);
 
@@ -146,7 +113,6 @@ export default function AdminWinningNumbersPage() {
 
         try {
             await adminApi.publishWinningNumbers(activeGame.gameId, selectedNumbers);
-            await winningBoardsApi.compute(activeGame.gameId);
 
             toast.success("Winning numbers saved for this game.");
             setSelectedNumbers([]);
@@ -154,7 +120,7 @@ export default function AdminWinningNumbersPage() {
             const refreshed = await gamesApi.getAll();
             setGames(refreshed);
 
-            // ✅ keep same game selected + reload results for it
+            // keep same game selected + reload results for it
             setSelectedGameId(activeGame.gameId);
             await loadResults(activeGame.gameId);
         } catch (error) {
@@ -338,7 +304,8 @@ export default function AdminWinningNumbersPage() {
 
                     <article className="space-y-4 rounded-3xl bg-white/90 p-4 shadow-inner">
                         {!overview &&
-                            <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">Select a game to
+                            <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">Select a game
+                                to
                                 see winners.</p>}
                         {overview && winners.length === 0 &&
                             <p className="rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-600">No winners
@@ -409,5 +376,6 @@ export default function AdminWinningNumbersPage() {
                 </aside>
             </div>
         </section>
+
     );
 }

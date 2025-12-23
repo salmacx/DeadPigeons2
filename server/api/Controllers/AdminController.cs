@@ -5,6 +5,7 @@ using MyDbContext = efscaffold.MyDbContext;
 using api.Models.Requests;
 using api.Models.Response;
 using api.Models;
+using api.Services;
 using efscaffold.Entities;
 using PasswordHasher = api.Etc.PasswordHasher;
 using PlayerResponseDto = api.Models.PlayerResponseDto;
@@ -16,11 +17,17 @@ namespace api.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly MyDbContext _dbContext;
+    private readonly IWinningBoardService _winningBoardService;
 
-    public AdminController(MyDbContext dbContext)
+    public AdminController(MyDbContext dbContext, IWinningBoardService winningBoardService)
     {
+        if (dbContext == null) throw new ArgumentNullException(nameof(dbContext));
+        if (winningBoardService == null) throw new ArgumentNullException(nameof(winningBoardService));
+
         _dbContext = dbContext;
-    }
+        _winningBoardService = winningBoardService;
+
+            }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -214,8 +221,11 @@ public class AdminController : ControllerBase
 
         await _dbContext.SaveChangesAsync();
 
-        return Ok(new { game.GameId, game.WinningNumbers });
-    }
+// Compute and persist winners for this game (idempotent inside the service)
+        var winningBoards = await _winningBoardService.ComputeWinningBoardsAsync(game.GameId);
+
+        return Ok(new { game.GameId, game.WinningNumbers, WinnersCreated = winningBoards.Count });
+            }
 
     [HttpGet("games/{gameId:guid}/payout-overview")]
 public async Task<ActionResult<AdminPayoutOverviewResponseDto>> GetPayoutOverview(Guid gameId)
